@@ -8,6 +8,7 @@ config/upgrade-lens.json
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 source-code/
 .idea/
 run/*/

@@ -3,7 +3,7 @@
 Checks a Spring Boot or Java upgrade by comparing a baseline branch (`master`) with a candidate branch
 (`change_branch`). Read `docs/approach.md` for the full design, and `docs/architecture.svg` for the picture.
 
-Runs on Windows (Windows PowerShell 5.1), from a terminal, IntelliJ, or VS Code. No Docker. Needs git, Maven
+Runs on Windows with Python 3.9 or later (standard library only), from a terminal, IntelliJ, or VS Code. No Docker. Needs git, Maven
 and a JDK per branch (with `java`, `javap` and `jdeps`). No local checkout of the application is needed: each
 run clones the two branches from `repoUrl` into its own folder.
 
@@ -12,18 +12,21 @@ run clones the two branches from `repoUrl` into its own folder.
 ```
 upgrade-lens/
   config/       upgrade-lens.json (this computer's paths), rules\*.json, probes.json
-  scripts/      one PowerShell script per stage, run-pipeline.ps1, agent-step.ps1, cleanup-run.ps1
-  scripts/lib/  core.ps1, analysis.ps1, library.ps1: shared, pure functions (unit tested)
-  tests/        Pester tests for scripts/lib
-  .claude/      Claude Code agents and skills for the agent steps
+  scripts/      one Python script per stage, next-step.py, run-stage.py, agent-step.py, run-pipeline.py, cleanup-run.py
+  scripts/lib/  core.py, analysis.py, library.py, orchestration.py: shared, pure functions (unit tested)
+  tests/        pytest tests for scripts/lib
+  .github/      agents/ and skills/: every agent and skill instruction (GitHub Copilot and Claude Code)
+  .github/prompts/upgradelens-orchestrator.prompt.md   /upgradelens-orchestrator in GitHub Copilot
+  .claude/skills/upgradelens-orchestrator/SKILL.md     /upgradelens-orchestrator in Claude Code (points to .github)
+  CLAUDE.md     tells Claude Code where the .github instructions are
   docs/         approach.md, architecture.svg
   runs/         one folder per run (git-ignored)
 ```
 
 ## Configuration
 
-Every tunable value is in `config\upgrade-lens.json`. Pass another file with `-Config <path>` to any script;
-`run-pipeline.ps1` hands the same file to every stage (and sets `UPGRADELENS_CONFIG` for the agent steps).
+Every tunable value is in `config\upgrade-lens.json`. Pass another file with `--config <path>` to any script;
+`run-stage.py` and `run-pipeline.py` hand the same file to every stage (and set `UPGRADELENS_CONFIG` for the agent steps).
 
 | Key | Meaning | Default |
 |---|---|---|
@@ -42,23 +45,23 @@ Every tunable value is in `config\upgrade-lens.json`. Pass another file with `-C
 | `agentBudget` | agent calls per run | 12 |
 | `owners.reviewer`, `owners.riskAcceptor` | owners of the manual review items | unassigned |
 
-Check it, without creating anything: `.\scripts\check-prereq.ps1`.
+Check it, without creating anything: `python scripts/check-prereq.py`.
 
 ## Stages
 
 | Stage | Script | What it does |
 |---|---|---|
-| 0. Setup | `phase0-setup.ps1` | Config validation, run folder, clone of the two branches into `runs\<id>\repo.git`, one worktree per branch (base detached, head on its branch; no checkout switching, no collisions), merge base, environment record |
-| 1. Build and test | `phase1-build.ps1` | Maven on both branches in parallel, each with its own JDK, worktree, `target\`, settings file and log; integration tests; test-by-test comparison of the two builds. A failure on either side fails the stage |
-| 2. Changed files | `phase2-changes.ps1` | Three-dot diff (`base...head`, from the merge base): categories, changed methods per diff hunk, signature, annotation, default and removed-branch changes, commits per file |
-| 3. Dependencies and API | `phase3-deps.ps1` | Dependency tree diff (`-Dverbose`: conflicts and who asked for which version), `dependency:analyze`, required / unnecessary / replacement assessment per added or removed dependency, suggested commands, application API diff, library API diff |
-| 4. Impact | `phase4-impact.ps1` | Rules, flows (endpoints, jobs, listeners), reach, JaCoCo coverage, untraced code, changed methods with their reason and coverage on both branches |
-| 5. Behavior | `phase5-behavior.ps1` | Startup smoke check, bean and property dumps, probes on both branches, proposed tests on both branches with injected regressions |
-| 6. Flow selection | `phase6-flows.ps1` | Scope per flow: full, targeted, or smoke |
-| 7. Manual review items | `phase7-manual.ps1` | Questions for a person, with the expected master result and an owner |
-| 8. Output | `phase8-output.ps1` | Validated new tests copied, uncommitted, into the change worktree (plus `artifacts\new-tests.patch`) with the commands to commit them; `findings.json`, `report.md`, `report.html` |
-| 9. Review | `phase9-review.ps1` | Agent review and manual decisions, checked by file hash and by author |
-| 10. Verdict | `phase10-verdict.ps1` | Safe, safe with listed tests, or blocked, with exit code 0 or 1 |
+| 0. Setup | `phase0-setup.py` | Config validation, run folder, clone of the two branches into `runs\<id>\repo.git`, one worktree per branch (base detached, head on its branch; no checkout switching, no collisions), merge base, environment record |
+| 1. Build and test | `phase1-build.py` | Maven on both branches in parallel, each with its own JDK, worktree, `target\`, settings file and log; integration tests; test-by-test comparison of the two builds. A failure on either side fails the stage |
+| 2. Changed files | `phase2-changes.py` | Three-dot diff (`base...head`, from the merge base): categories, changed methods per diff hunk, signature, annotation, default and removed-branch changes, commits per file |
+| 3. Dependencies and API | `phase3-deps.py` | Dependency tree diff (`-Dverbose`: conflicts and who asked for which version), `dependency:analyze`, required / unnecessary / replacement assessment per added or removed dependency, suggested commands, application API diff, library API diff |
+| 4. Impact | `phase4-impact.py` | Rules, flows (endpoints, jobs, listeners), reach, JaCoCo coverage, untraced code, changed methods with their reason and coverage on both branches |
+| 5. Behavior | `phase5-behavior.py` | Startup smoke check, bean and property dumps, probes on both branches, proposed tests on both branches with injected regressions |
+| 6. Flow selection | `phase6-flows.py` | Scope per flow: full, targeted, or smoke |
+| 7. Manual review items | `phase7-manual.py` | Questions for a person, with the expected master result and an owner |
+| 8. Output | `phase8-output.py` | Validated new tests copied, uncommitted, into the change worktree (plus `artifacts\new-tests.patch`) with the commands to commit them; `findings.json`, `report.md`, `report.html` |
+| 9. Review | `phase9-review.py` | Agent review and manual decisions, checked by file hash and by author |
+| 10. Verdict | `phase10-verdict.py` | Safe, safe with listed tests, or blocked, with exit code 0 or 1 |
 
 ### Library API diff (stage 3)
 
@@ -85,25 +88,25 @@ still produces the report, with the failure and the sections that could not be b
 Configure `config\upgrade-lens.json`, then start the **upgradelens-orchestrator** agent and ask it to run the
 check:
 
-- GitHub Copilot Chat (VS Code): pick `upgradelens-orchestrator` in the agent dropdown
+- GitHub Copilot Chat (VS Code): type `/upgradelens-orchestrator`, or pick `upgradelens-orchestrator` in the agent dropdown
   (`.github\agents\upgradelens-orchestrator.agent.md`), then "run the UpgradeLens check".
-- Claude Code: "run the UpgradeLens check" (agent `upgradelens-orchestrator`, skill `upgradelens-run`).
+- Claude Code: type `/upgradelens-orchestrator` (add `continue run <run id>` to resume). It points to the same `.github` orchestrator; each agent step runs as a general-purpose subagent with the printed prompt, which names its `.github\agents\` file.
 
 The orchestrator does not choose the order. It loops on one script:
 
-```powershell
-.\scripts\next-step.ps1 [-RunId <id>]     # prints one JSON action: run-stage, wait, run-agent, end-agent, stop, done
+```shell
+python scripts/next-step.py [--run-id <id>]     # prints one JSON action: run-stage, wait, run-agent, end-agent, stop, done
 ```
 
 and runs exactly the commands it prints:
 
 | Script | Role |
 |---|---|
-| `run-stage.ps1 -New` / `-RunId <id> -Key <key>` / `-Wait` | the only entry to a stage: order check, one-stage lock, detached process (exit 10 = still running), failure report, ledger |
-| `agent-step.ps1 -Key <key> -Action begin` | order and budget check, fingerprint of everything the agent must not touch, the exact subagent prompt |
-| `agent-step.ps1 -Key <key> -Action end` | write-scope check (stops the run), output checks (one retry with the errors), ledger |
+| `run-stage.py --new` / `--run-id <id> --key <key>` / `--wait` | the only entry to a stage: order check, one-stage lock, detached process (exit 10 = still running), failure report, ledger |
+| `agent-step.py --key <key> --action begin` | order and budget check, fingerprint of everything the agent must not touch, the exact subagent prompt |
+| `agent-step.py --key <key> --action end` | write-scope check (stops the run), output checks (one retry with the errors), ledger |
 
-The fixed plan (`scripts\lib\orchestration.ps1`, `Get-RunPlan`):
+The fixed plan (`scripts\lib\orchestration.py`, `run_plan`):
 
 ```
 stage 0, 1, 2, 3 -> release-notes agent -> stage 4 -> analyst agent -> stage 4 (merge)
@@ -116,8 +119,8 @@ A step that is not needed is recorded as skipped with its reason. Every step is 
 
 Guardrails, enforced by the scripts (not by the agent's good behavior):
 
-- A stage of an orchestrated run refuses to run directly (`phase*.ps1`), out of order, or while another stage
-  runs. `run-pipeline.ps1` refuses without `-ScriptsOnly` (scripts-only runs, no agents, for CI facts).
+- A stage of an orchestrated run refuses to run directly (`phase*.py`), out of order, or while another stage
+  runs. `run-pipeline.py` refuses without `--scripts-only` (scripts-only runs, no agents, for CI facts).
 - An agent may write only its own files under `artifacts\agent`. Any change to the run folder, a worktree's
   git state, or the tool's scripts, config, agents or skills stops the run.
 - Agent output is rejected (one retry) when: the input hash is stale; a changed main-code method or type has no
@@ -143,8 +146,9 @@ usage, `3` tool failure, `4` build or tests failed (stage 1).
   reason why none is possible.
 - `upgradelens-test-reviewer`: reviews the tests in a fresh context; writes only its verdict file.
 
-The Copilot files in `.github\agents\` are thin wrappers: the instructions live once, in `.claude\agents\` and
-`.claude\skills\`.
+Every instruction lives in `.github\agents\` and `.github\skills\`. The single file under `.claude\` is only the Claude Code slash-command entry point. GitHub Copilot loads these
+files directly; Claude Code reaches them through `CLAUDE.md`. The scripts enforce the order, budget and write scope the
+same way for both.
 
 ## Workspace and new tests
 
@@ -162,7 +166,7 @@ when validated copied by stage 8 into the change worktree, uncommitted. Report s
 why it was added, and the commands to commit it. The automation never stages, commits or pushes; a developer
 reviews the files in the change worktree, then:
 
-```powershell
+```shell
 cd runs\<id>\worktrees\<head branch>
 git add <the new test files>
 git commit -m "Add characterization tests from UpgradeLens run <id>"
@@ -171,8 +175,8 @@ git push
 
 Or apply `runs\<id>\artifacts\new-tests.patch` to another checkout with `git apply`.
 
-When done: `.\scripts\cleanup-run.ps1 -RunId <id>` (or `-All`) removes the run's clone and worktrees. It
-refuses while the change worktree has uncommitted or unpushed work, unless `-Force`.
+When done: `python scripts/cleanup-run.py --run-id <id>` (or `--all`) removes the run's clone and worktrees. It
+refuses while the change worktree has uncommitted or unpushed work, unless `--force`.
 
 ## Decisions by a person
 
@@ -187,8 +191,9 @@ unknown decision, or no reviewer. Stage 10 then unblocks an accepted confirmed c
 
 ## Unit tests
 
-```powershell
-Invoke-Pester .\tests
+```shell
+python -m pip install pytest   # once
+python -m pytest tests
 ```
 
 They cover the parsers (dependency trees, verbose conflicts, javap and jdeps output, surefire reports), the
@@ -202,4 +207,4 @@ Listed in the verdict, never a silent pass:
 - Testcontainers integration tests: no Docker on this machine; the method is still to be decided.
 - Mutation testing (PIT): only when main code changed; the step is not wired yet.
 - Per-test coverage: coverage is per symbol, not per test.
-- Resume with fingerprints (approach section 11): `-From` reruns from a stage, without fingerprints.
+- Resume with fingerprints (approach section 11): `--from` reruns from a stage, without fingerprints.
