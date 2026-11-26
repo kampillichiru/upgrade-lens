@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "repoUrl": "https://github.com/kampillichiru/orders-service.git",
+  "baseBranch": "main",
+  "headBranch": "change_branch",
+  "java": {
+    "base": "C:\\Users\\Admin\\tools\\jdk-17.0.21.1+2",
+    "head": "C:\\Program Files\\Java\\jdk-25.0.4.1"
+  },
+  "maven": {
+    "command": "mvn",
+    "settingsFile": "E:\\Chiru\\AIStuff\\.m2\\settings.xml",
+    "goals": "clean verify",
+    "extraArgs": []
+  },
+  "git": {
+    "command": "git"
+  },
+  "runsFolder": "runs",
+  "rulesDir": "config\\rules",
+  "probesFile": "config\\probes.json",
+  "build": {
+    "integrationTests": "auto"
+  },
+  "timeouts": {
+    "buildMinutes": 60,
+    "startupSeconds": 120
+  },
+  "dependencies": {
+    "ignoreUnused": []
+  },
+  "library": {
+    "enabled": true,
+    "maxMembersPerClass": 40
+  },
+  "agentBudget": 12,
+  "orchestration": {
+    "maxAgentAttempts": 2,
+    "maxTestRepairRounds": 1,
+    "maxTests": 15
+  },
+  "owners": {
+    "reviewer": "",
+    "riskAcceptor": ""
+  }
+}
