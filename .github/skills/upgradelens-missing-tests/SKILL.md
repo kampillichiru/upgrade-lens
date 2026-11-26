@@ -55,7 +55,8 @@ Run folder `runs\<run id>\`:
 4. **Write one test class per gap group.** Same package as the code under test. Name it
    `<Subject>CharacterizationTest` (or `<Subject>CharacterizationIT` when it follows the integration-test
    pattern), so that it cannot collide with an existing class. Write the file to
-   `runs\<run id>\artifacts\agent\tests\<relative path>`, never into a worktree or the repository.
+   `<output folder>\tests\<relative path>`, never into a worktree or the repository. The output folder is named
+   in your prompt: `runs\<run id>\artifacts\agent\` in a full run, a session folder when the agent runs on its own.
 
    Rules for the test code:
    - It must compile on master and on change_branch unchanged. Check every import against both worktrees'
@@ -77,7 +78,7 @@ Run folder `runs\<run id>\`:
    The test must fail when this injection is applied. A test that passes with its injection is not a
    regression detector, and stage 5 will not validate it.
 
-6. **Write the manifest** `runs\<run id>\artifacts\agent\tests-manifest.json`:
+6. **Write the manifest** `<output folder>\tests-manifest.json`:
 
 ```json
 {
@@ -111,11 +112,11 @@ Run folder `runs\<run id>\`:
 ```
 
    `className` must match the file name, and `relativePath` (forward slashes, under `src/test/`) must match the
-   file's place in `artifacts\agent\tests\`. `gapIds` lists the gaps the test covers (at least one). `purpose`
+   file's place in `<output folder>\tests\`. `gapIds` lists the gaps the test covers (at least one). `purpose`
    says why the test was added and what potential impact it proves or disproves, in plain words; the report
    shows it next to the test. `linkedRules` lists the rule ids of the findings the test checks (from
    `impact-findings.json`). Each injection's `file` is under `src/main/`, and its `find` occurs exactly once.
-   Every file under `artifacts\agent\tests\` must be in the manifest. At most `orchestration.maxTests` tests
+   Every file under `<output folder>\tests\` must be in the manifest. At most `orchestration.maxTests` tests
    (default 15): group gaps that one test can pin.
 
 7. **Input hash:** use the value in your prompt (or print it with
@@ -127,17 +128,17 @@ Run folder `runs\<run id>\`:
 
 ## Repair round
 
-When the prompt says it is a repair round, read `artifacts\behavior-results.json` (`tests[]`): for each test
+When the prompt says it is a repair round, your output folder already holds the earlier tests and manifest. Read `artifacts\behavior-results.json` (`tests[]`): for each test
 that failed on master, failed to compile, or missed an injected regression, fix the test or the injection.
 Keep the ids and the gap coverage. A test that passes on master and fails on change_branch is not broken: it
 shows a real behavior change. Keep it unchanged and say so in `purpose`.
 
 ## Rules
 
-- Write only under `runs\<run id>\artifacts\agent\`.
+- Write only under your output folder.
 - Expected values come from master's code. Never make a test pass by copying what change_branch does.
 - Do not write a test for anything that is not in `artifacts\test-gaps.json`. Keep the set small.
 - Never write `artifacts\test-gaps.json`, `usage.json`, `review.json` or any file outside
-  `artifacts\agent\tests-manifest.json` and `artifacts\agent\tests\`: the end check stops the run.
+  `<output folder>\tests-manifest.json` and `<output folder>\tests\`: the end check rejects the call.
 - Injections must be real regressions, not renames, comment edits or formatting.
 - Do not invent a finding id or a rule id. Only use ids from `impact-findings.json`.

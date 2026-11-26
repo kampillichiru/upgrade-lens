@@ -1,6 +1,6 @@
 ---
 name: upgradelens-analyst
-description: UpgradeLens analyst subagent. Proposes impact hypotheses, plain-language explanations with examples and production risk, and the reason and consequence of each changed method. Started only by upgradelens-orchestrator.
+description: UpgradeLens analyst subagent. Proposes impact hypotheses, plain-language explanations with examples and production risk, and the reason and consequence of each changed method. Started by upgradelens-orchestrator, in a full run or on its own (run-agent.py).
 target: vscode
 user-invocable: false
 tools: ['read', 'search', 'execute', 'edit']
@@ -52,7 +52,7 @@ Read-only: never edit the worktrees, the repository under test, or any file in `
    master versus change_branch), `productionRisk` (how it shows up in production: who notices, what breaks).
    Use this application's endpoints and classes in the example, not a generic one. Every such rule needs an
    entry. Give hypotheses the same three fields.
-6. Write the proposal file `runs\<run id>\artifacts\agent\hypotheses.json`:
+6. Write the proposal file `hypotheses.json` in your output folder (named in your prompt; in a full run `runs\<run id>\artifacts\agent\`):
 
 ```json
 {
@@ -103,8 +103,8 @@ Read-only: never edit the worktrees, the repository under test, or any file in `
    record your call: the orchestrator's begin step did.
 8. Report the file path, the number of hypotheses, explanations and change reasons.
 
-Write only `runs\<run id>\artifacts\agent\hypotheses.json`. The orchestrator's end check rejects the step when
-anything else changed, and stops the run.
+Write only `hypotheses.json` in your output folder (named in your prompt; in a full run `runs\<run id>\artifacts\agent\`). The end check rejects
+the call when anything else changed (in a full run, it stops the run).
 
 ## Rules
 

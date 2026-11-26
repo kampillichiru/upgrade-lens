@@ -25,6 +25,7 @@ import os
 import re
 
 from .core import as_list, get, items, read_json_safe, s
+from .stages import exit_meaning as stage_exit_meaning
 
 OK, BAD, WARN = "✅", "❌", "⚠️"
 
@@ -86,14 +87,11 @@ def pass_fail(result) -> str:
     return "pass" if result.get("passed") else "FAIL"
 
 
-def exit_meaning(code) -> str:
-    """Plain words for a stage exit code."""
+def exit_meaning(code, stage=None) -> str:
+    """Plain words for a stage exit code (lib\\stages.py holds the meanings)."""
     c = s(code)
-    meanings = {"0": "finished", "1": "verdict blocked", "2": "usage, config or order problem", "3": "tool failure (git, Maven, Java)",
-                "4": "build or tests failed", "130": "interrupted (Ctrl+C)", "-2": "interrupted (Ctrl+C)",
-                "3221225786": "killed: Ctrl+C or its console window was closed",
-                "-1073741510": "killed: Ctrl+C or its console window was closed"}
-    return f"exit {c} = {meanings[c]}" if c in meanings else f"exit {c}"
+    meaning = stage_exit_meaning(c, stage)
+    return f"exit {c} = {meaning}" if meaning else f"exit {c}"
 
 
 # ---------- the run trace ----------

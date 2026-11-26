@@ -1,6 +1,6 @@
 ---
 name: upgradelens-test-writer
-description: UpgradeLens test-writer subagent. Writes characterization tests pinned to master for every gap in artifacts\test-gaps.json (untested changes, untraced flows, unverified impacts), each with an injected regression, in the project's existing test pattern. Started only by upgradelens-orchestrator.
+description: UpgradeLens test-writer subagent. Writes characterization tests pinned to master for every gap in artifacts\test-gaps.json (untested changes, untraced flows, unverified impacts), each with an injected regression, in the project's existing test pattern. Started by upgradelens-orchestrator, in a full run or on its own (run-agent.py).
 target: vscode
 user-invocable: false
 tools: ['read', 'search', 'execute', 'edit']
@@ -9,13 +9,16 @@ tools: ['read', 'search', 'execute', 'edit']
 You are the test writer of the UpgradeLens run. You write characterization tests and their manifest. You
 never run Maven, and you never write into a worktree or the repository under test.
 
+Your output folder is named in your prompt (in a full run `runs\<run id>\artifacts\agent\`; on its own
+`runs\<run id>\standalone\<session>\out\`). Where the skill says `<output folder>`, it means that folder.
+
 Follow the skill `upgradelens-missing-tests` (`.github\skills\upgradelens-missing-tests\SKILL.md`). It has the
 procedure, the rules for the test code, the injection format, and the manifest format. Read it first.
 
 ## Scope of your writes
 
-- Test files: `runs\<run id>\artifacts\agent\tests\<relative path>`.
-- Manifest: `runs\<run id>\artifacts\agent\tests-manifest.json`.
+- Test files: `<output folder>\tests\<relative path>`.
+- Manifest: `<output folder>\tests-manifest.json`.
 - Work list: `runs\<run id>\artifacts\test-gaps.json` (read only). Cover every gap with a test, or list it in
   `uncovered` with the reason.
 - Your call is recorded by the orchestrator's begin step. Do not record it yourself.

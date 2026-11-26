@@ -45,7 +45,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.analysis import new_added_file_patch  # noqa: E402
 from lib.summary import build_summary, markdown_to_html  # noqa: E402
-from lib.core import (TOOL_VERSION, agent_proposal, as_list, file_sha256, get, icontains, items, like, log, native_path,  # noqa: E402
+from lib.agents import agent_proposal  # noqa: E402
+from lib.core import (TOOL_VERSION, as_list, file_sha256, get, icontains, items, like, log, native_path,  # noqa: E402
                       read_json_safe, read_lines, resolve_config_path, resolve_run_id, run_main, runs_root, s, set_run_state,
                       set_stage_log, set_stage_step, short, unique, write_json, write_text)
 

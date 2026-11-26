@@ -427,42 +427,6 @@ def resolve_project_path(path: str, root_dir: str = ROOT_DIR) -> str:
     return os.path.join(root_dir, native_path(path))
 
 
-# ---------- agent proposals ----------
-
-def agent_inputs(run_dir: str, step: str) -> list[str]:
-    """The files whose bytes an agent proposal is tied to. agent-step.py prints their hash for the agent;
-    the stages recompute it and use a proposal only when the hashes match. One list, used by both."""
-    a = os.path.join(run_dir, "artifacts")
-    if step == "analyst":
-        rules_dir = os.path.join(run_dir, "config", "rules")
-        rules = []
-        if os.path.isdir(rules_dir):
-            rules = [os.path.join(rules_dir, n) for n in ps_sorted(os.listdir(rules_dir))
-                     if n.lower().endswith(".json") and os.path.isfile(os.path.join(rules_dir, n))]
-        return [os.path.join(a, "change-inventory.json"), os.path.join(a, "dependency-diff.json"),
-                os.path.join(a, "api-diff.json"), os.path.join(a, "library-api-diff.json")] + rules
-    if step == "tests":
-        # test-gaps.json is written by next-step.py before the test writer runs (outside artifacts\agent,
-        # so the writer cannot change its own work list).
-        return [os.path.join(a, "impact-findings.json"), os.path.join(a, "reach.json"),
-                os.path.join(a, "changed-methods.json"), os.path.join(a, "test-gaps.json")]
-    if step == "release-notes":
-        return [os.path.join(a, "dependency-diff.json"), os.path.join(a, "library-api-diff.json")]
-    raise ValueError(f"unknown agent step '{step}'")
-
-
-def agent_proposal(run_dir: str, step: str, file_name: str) -> dict:
-    """State of one agent proposal file: not-run (no file), stale (inputs changed since it was written),
-    or used. Only a "used" proposal may change a result."""
-    path = os.path.join(run_dir, "artifacts", "agent", file_name)
-    if not os.path.isfile(path):
-        return {"state": "not-run", "doc": None, "path": path}
-    doc = read_json_safe(path)
-    expected = input_hash(agent_inputs(run_dir, step))
-    state = "used" if isinstance(doc, dict) and doc.get("inputHash") == expected else "stale"
-    return {"state": state, "doc": doc, "path": path}
-
-
 # ---------- run folder and status ----------
 
 def runs_root(cfg, root_dir: str = ROOT_DIR) -> str:

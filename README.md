@@ -1,7 +1,8 @@
 # UpgradeLens
 
 Checks a Spring Boot or Java upgrade by comparing a baseline branch (`master`) with a candidate branch
-(`change_branch`). Read `docs/approach.md` for the full design, and `docs/architecture.svg` for the picture.
+(`change_branch`). Read `docs/how-it-works.md` for how the pieces fit and what to run when, `docs/approach.md` for
+the full design, and `docs/architecture.svg` for the picture.
 
 Runs on Windows with Python 3.9 or later (standard library only), from a terminal, IntelliJ, or VS Code. No Docker. Needs git, Maven
 and a JDK per branch (with `java`, `javap` and `jdeps`). No local checkout of the application is needed: each
@@ -12,8 +13,10 @@ run clones the two branches from `repoUrl` into its own folder.
 ```
 upgrade-lens/
   config/       upgrade-lens.json (this computer's paths), rules\*.json, probes.json
-  scripts/      one Python script per stage, next-step.py, run-stage.py, agent-step.py, run-pipeline.py, cleanup-run.py
-  scripts/lib/  core.py, analysis.py, library.py, orchestration.py: shared, pure functions (unit tested)
+  scripts/      one Python script per stage, next-step.py, run-stage.py, agent-step.py, run-agent.py, run-pipeline.py,
+                diagnose.py, cleanup-run.py
+  scripts/lib/  shared functions (unit tested): core, analysis, library (stage facts); stages (one definition per
+                stage); plan, ledger, facts, guards (orchestration); agents (one definition per agent), agent_checks
   tests/        pytest tests for scripts/lib
   .github/      agents/ and skills/: every agent and skill instruction (GitHub Copilot and Claude Code)
   .github/prompts/upgradelens-orchestrator.prompt.md   /upgradelens-orchestrator in GitHub Copilot
@@ -96,7 +99,8 @@ check:
 
 - GitHub Copilot Chat (VS Code): type `/upgradelens-orchestrator`, or pick `upgradelens-orchestrator` in the agent dropdown
   (`.github\agents\upgradelens-orchestrator.agent.md`), then "run the UpgradeLens check".
-- Claude Code: type `/upgradelens-orchestrator` (add `continue run <run id>` to resume). It points to the same `.github` orchestrator; each agent step runs as a general-purpose subagent with the printed prompt, which names its `.github\agents\` file.
+- Claude Code: type `/upgradelens-orchestrator` (add `continue run <run id>` to resume, or `agent <step> on run <run id>`
+  to run one agent on its own). It points to the same `.github` orchestrator; each agent step runs as a general-purpose subagent with the printed prompt, which names its `.github\agents\` file.
 
 The orchestrator does not choose the order. It loops on one script:
 
@@ -112,7 +116,7 @@ and runs exactly the commands it prints:
 | `agent-step.py --key <key> --action begin` | order and budget check, fingerprint of everything the agent must not touch, the exact subagent prompt |
 | `agent-step.py --key <key> --action end` | write-scope check (stops the run), output checks (one retry with the errors), ledger |
 
-The fixed plan (`scripts\lib\orchestration.py`, `run_plan`):
+The fixed plan (`scripts\lib\plan.py`, `run_plan`):
 
 ```
 stage 0, 1, 2, 3 -> release-notes agent -> stage 4 -> analyst agent -> stage 4 (merge)
@@ -140,6 +144,54 @@ Guardrails, enforced by the scripts (not by the agent's good behavior):
 
 Stage exit codes: `0` safe or safe with listed tests, `1` blocked (see `runs\<id>\verdict.json`), `2` config or
 usage, `3` tool failure, `4` build or tests failed (stage 1).
+
+## When a run fails or is stuck
+
+```shell
+python scripts/diagnose.py --run-id <id>               # the failed or stuck step, found for you
+python scripts/diagnose.py --run-id <id> --stage 5     # one stage, whatever its state (--key agent-tests for a plan step)
+python scripts/diagnose.py --run-id <id> --json        # the same, as JSON
+```
+
+One read-only command instead of five places to look. It shows every plan step with its attempts (interrupted
+attempts that were retried included), and for the problem step: each attempt's exit code in words, the inputs it
+needs (present or missing, and which stage writes a missing one), its outputs, a hint for what usually goes
+wrong, the end of its logs (the runner's stderr, the stage log, the per-branch build or app logs, newest first),
+an agent step's check errors, and the next command to run. In chat, ask the orchestrator "why did run <id> fail?".
+
+What each stage needs, writes and logs, and what its exit codes mean, is defined once, in `scripts\lib\stages.py`
+(`STAGES`). `run-stage.py` and `run-pipeline.py` use it to refuse a stage whose inputs are missing before it
+starts (exit 2, "cannot start", with the stage that writes each one), instead of failing halfway.
+
+## One agent on its own
+
+Each agent can run on any run where the data it needs is there, outside the run's plan: to try an agent's
+prompt, to redo one agent's answer, or to add an agent's answer to a scripts-only run. Ask the orchestrator
+("run agent analyst on run <id>"), or drive it by hand:
+
+```shell
+python scripts/run-agent.py --run-id <id>                                   # each agent: ready, missing (what, from which stage), nothing to do
+python scripts/run-agent.py --run-id <id> --step analyst --action begin     # prints the subagent prompt and its endCommand
+python scripts/run-agent.py --run-id <id> --action end --session <s> --guard-sha256 <h>
+python scripts/run-agent.py --run-id <id> --action apply --session <s>      # scripts-only runs: hand the answer to the stages
+```
+
+| Agent (`--step`) | Needs (artifacts) | From | Used from stage |
+|---|---|---|---|
+| `release-notes` | dependency-diff, library-api-diff | stage 3 | 7 |
+| `analyst` | change-inventory, dependency-diff, api-diff, library-api-diff, environment | stages 0-3 | 4 |
+| `tests` | impact-findings, reach, changed-methods, test-gaps, environment (`--repair`: also behavior-results and the run's tests) | stages 4-5 | 5 |
+| `reviewer` | behavior-results, agent\tests-manifest, environment | stage 5 and the test writer | 9 |
+
+The agent writes only into `runs\<id>\standalone\<session>\out\`. Begin fingerprints everything else (the run
+folder, its artifacts and earlier agent files, the ledger, both worktrees' git state, the tool); end rejects
+the call on any change there (exit 5) and runs the same content checks as a full run (exit 6). A standalone call
+is not counted in `agentBudget` and not written to the ledger. `apply` copies an accepted answer into
+`artifacts\agent` of a scripts-only run only, and only while its inputs are unchanged; an orchestrated run's
+`artifacts\agent` stays as its plan left it.
+
+What each agent reads, may write, is told and is checked on is defined once, in `scripts\lib\agents.py`
+(`AGENTS`). `agent-step.py` (full run) and `run-agent.py` (one agent) both use it.
 
 ## Agents and skills
 

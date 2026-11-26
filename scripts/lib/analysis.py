@@ -7,8 +7,8 @@ import os
 import re
 import xml.etree.ElementTree as ET
 
-from .core import (as_list, get, icontains, like, ps_sorted, rule_applies, s, sort_key, symbol_for_line, to_int,
-                   unique_sorted)
+from .core import (as_list, get, icontains, items, like, ps_sorted, rule_applies, s, sort_key, symbol_for_line, to_int,
+                   unique, unique_sorted)
 
 
 def parse_dependency_analyze(lines) -> dict:
@@ -533,3 +533,58 @@ def finding_status(finding: dict, checks, decisions=()) -> str:
     if linked:
         return "verified"
     return "open"
+
+
+# ---------- agent work lists ----------
+
+def needs_repair(test: dict) -> bool:
+    """A proposed test is broken when it fails on master (it does not pin master's behavior), or when it passes
+    on both branches but misses an injected regression (it detects nothing). A test that passes on master and
+    fails on change_branch is not broken: it proves a behavior change, and is kept as evidence."""
+    if not get(test, "base", "passed"):
+        return True
+    if get(test, "head", "passed") and not test.get("validated"):
+        return True
+    return False
+
+
+def proves_change(test: dict) -> bool:
+    """A test that passes on master and fails on change_branch: evidence of a behavior change."""
+    return bool(get(test, "base", "passed")) and not get(test, "head", "passed")
+
+
+def release_notes_refs(lib_api, dep_diff) -> list[str]:
+    """The library changes the release-notes agent must cover: high or medium library API items, and direct
+    dependencies that changed by a major version. Stage 10 uses the same list."""
+    refs = []
+    if lib_api and lib_api.get("available"):
+        refs += [s(i.get("id")) for i in items(lib_api.get("items")) if s(i.get("severity")) in ("high", "medium")]
+    if dep_diff:
+        refs += [s(c.get("ga")) for c in items(dep_diff.get("changed")) if c.get("direct") and c.get("major")]
+    return unique(refs)
+
+
+def find_test_gaps(changed_methods, reach, impact, checks=()) -> list[dict]:
+    """Every item a test must cover, or the test writer must explain why it cannot (requirement: write a test
+    for each potential impact). Ids are stable for one input: G-01, G-02, ... in this order:
+      untested-change     a changed main-code method or type that no test executes on change_branch
+      untraced-flow       a flow that reaches code no test executes
+      unverified-impact   a high or medium finding with production scope that no probe or test checked"""
+    rows = []
+    methods = [m for m in items(get(changed_methods, "methods")) if not m.get("tested") and m.get("kind") != "file"]
+    for m in sorted(methods, key=lambda m: (sort_key(m.get("file")), sort_key(m.get("name")))):
+        rows.append({"type": "untested-change", "ref": f"{m.get('file')}|{m.get('kind')}:{m.get('name')}", "severity": "high",
+                     "detail": f"changed {m.get('kind')} {m.get('name')} in {m.get('file')} is not executed by any test on change_branch"})
+    for fl in ps_sorted([f for f in items(get(reach, "flows")) if as_list(f.get("untraced"))], key=lambda f: f.get("id")):
+        rows.append({"type": "untraced-flow", "ref": s(fl.get("id")), "severity": "high",
+                     "detail": f"flow {fl.get('id')} reaches code no test executes: {', '.join(s(x) for x in as_list(fl.get('untraced')))}"})
+    for f in ps_sorted(items(get(impact, "findings")), key=lambda f: f.get("id")):
+        if s(f.get("severity")) not in ("high", "medium"):
+            continue
+        if s(f.get("scope")) not in ("global", "symbol"):
+            continue
+        if finding_status(f, as_list(checks)) != "open":
+            continue
+        rows.append({"type": "unverified-impact", "ref": s(f.get("id")), "severity": s(f.get("severity")),
+                     "detail": f"{f.get('id')} [{f.get('ruleId')}] {f.get('title')}: {f.get('impact')}"})
+    return [{"id": f"G-{i:02d}", **r} for i, r in enumerate(rows, start=1)]

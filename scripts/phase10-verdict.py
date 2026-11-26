@@ -40,7 +40,8 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.analysis import finding_status  # noqa: E402
-from lib.core import (agent_proposal, as_list, get, items, log, now_iso, ps_sorted, read_json_safe, resolve_config_path,  # noqa: E402
+from lib.agents import agent_proposal  # noqa: E402
+from lib.core import (as_list, get, items, log, now_iso, ps_sorted, read_json_safe, resolve_config_path,  # noqa: E402
                       resolve_run_id, run_main, run_script, runs_root, s, set_run_state, set_stage_log, set_stage_step,
                       verdict, write_json)
 

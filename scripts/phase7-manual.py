@@ -33,7 +33,8 @@ import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib.core import (TOOL_VERSION, agent_proposal, as_list, get, items, like, log, read_json_safe, resolve_config_path,  # noqa: E402
+from lib.agents import agent_proposal  # noqa: E402
+from lib.core import (TOOL_VERSION, as_list, get, items, like, log, read_json_safe, resolve_config_path,  # noqa: E402
                       resolve_run_id, run_main, runs_root, s, set_run_state, set_stage_log, set_stage_step, write_json)
 
 LATER_STATES = ["phase6-done", "phase7-done", "phase8-done", "phase9-done", "verdict-blocked", "verdict-listed", "verdict-safe"]

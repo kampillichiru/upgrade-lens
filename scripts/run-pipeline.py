@@ -38,19 +38,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.core import read_json_safe, resolve_config_path, run_main, run_script, runs_root, sort_key  # noqa: E402
-
-STAGES = [
-    (1, "build and test both branches", "phase1-build.py"),
-    (2, "changed files", "phase2-changes.py"),
-    (3, "dependencies and API", "phase3-deps.py"),
-    (4, "impact evaluation", "phase4-impact.py"),
-    (5, "behavior checks", "phase5-behavior.py"),
-    (6, "flow selection", "phase6-flows.py"),
-    (7, "manual review items", "phase7-manual.py"),
-    (8, "output and new tests", "phase8-output.py"),
-    (9, "test and report review", "phase9-review.py"),
-    (10, "verdict", "phase10-verdict.py"),
-]
+from lib.stages import STAGES, missing_message  # noqa: E402
 
 
 def stage_number(value: str) -> int:
@@ -122,11 +110,17 @@ def main(argv) -> int:
             return 3
 
     run_dir = os.path.join(runs, run_id)
-    for n, title, script in STAGES:
-        if n < a.from_stage or n > a.through:
+    for n, spec in STAGES.items():
+        if n == 0 or n < a.from_stage or n > a.through:
             continue
+        title = spec.title
         print(f"== Stage {n}: {title} (run {run_id}) ==", flush=True)
-        code = run_script(script, ["--run-id", run_id, "--config", config])
+        missing = missing_message(run_dir, n)
+        if missing:
+            print(missing)
+            print(f"Pipeline stopped. Diagnose: python scripts/diagnose.py --run-id {run_id}")
+            return 2
+        code = run_script(spec.script, ["--run-id", run_id, "--config", config])
         if n == 10:
             if code == 0:
                 print(f"Verdict: safe or safe with listed tests. Report: {os.path.join(run_dir, 'reports', 'report.md')}")
@@ -139,6 +133,7 @@ def main(argv) -> int:
             return code
         if code != 0:
             print(f"Stage {n} ({title}) failed (exit {code}). Pipeline stopped. Run folder: {run_dir}")
+            print(f"Diagnose: python scripts/diagnose.py --run-id {run_id} --stage {n}")
             if n == 1 and code == 4:
                 print(f"== Stage 2: changed files, for the failure report (run {run_id}) ==", flush=True)
                 run_script("phase2-changes.py", ["--run-id", run_id, "--config", config])

@@ -6,10 +6,10 @@ import re
 
 import pytest
 
-from lib.orchestration import AGENT_FILES, agent_prompt
+from lib.agents import AGENTS as AGENT_SPECS, AgentRun, agent_prompt
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-AGENTS = sorted(info["agent"] for info in AGENT_FILES.values()) + ["upgradelens-orchestrator"]
+AGENTS = sorted(spec.agent for spec in AGENT_SPECS.values()) + ["upgradelens-orchestrator"]
 SKILLS = ["upgradelens-missing-tests", "upgradelens-phase0", "upgradelens-run"]
 
 
@@ -35,9 +35,9 @@ def test_each_skill_has_its_github_file(skill):
     assert frontmatter_name(read(".github", "skills", skill, "SKILL.md")) == skill
 
 
-@pytest.mark.parametrize("step", sorted(AGENT_FILES))
+@pytest.mark.parametrize("step", sorted(AGENT_SPECS))
 def test_the_subagent_prompt_names_an_existing_github_file(step):
-    prompt = agent_prompt(step, "r1", "runs\\r1", "H", f"agent-{step}")
+    prompt = agent_prompt(AgentRun(step=step, run_id="r1", run_dir="runs\\r1"))
     m = re.search(r"\(\.github\\agents\\([\w-]+\.agent\.md)\)", prompt)
     assert m and os.path.isfile(os.path.join(ROOT, ".github", "agents", m.group(1)))
 

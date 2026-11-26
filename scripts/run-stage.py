@@ -6,6 +6,7 @@ Guards:
   - detached: the stage runs in its own process, so a chat tool that times out a long command (a Maven build
     can take an hour) does not kill it. This call waits up to --wait-seconds, then returns exit 10 (still
     running); run it again with --wait until it returns.
+  - inputs: a stage whose inputs (lib\\stages.py, needs) are missing is refused before it starts (exit 2)
   - failure report: when a stage fails, stage 8 writes a partial report (after a failed build, stage 2 first)
   - ledger: each run is recorded in runs\\<id>\\orchestration\\ledger.json with its exit code
 
@@ -34,8 +35,10 @@ import json  # noqa: E402
 
 from lib.core import (IS_WINDOWS, as_list, command, config_value, ignore_interrupts, now_iso, read_json_safe,  # noqa: E402
                       resolve_config_path, run_main, run_script, runs_root, tail, to_int, write_json)
-from lib.orchestration import (ledger_entry, max_stage_attempts, lock_path, new_ledger, next_action, read_ledger, run_facts,  # noqa: E402
-                               run_lock, run_plan, set_ledger_entry, stage_script)
+from lib.facts import run_facts  # noqa: E402
+from lib.ledger import ledger_entry, lock_path, new_ledger, read_ledger, run_lock, set_ledger_entry  # noqa: E402
+from lib.plan import max_stage_attempts, next_action, plan_step, run_plan, stage_script  # noqa: E402
+from lib.stages import missing_message, missing_needs  # noqa: E402
 
 
 def wait_seconds(value: str) -> int:
@@ -104,7 +107,7 @@ def main(argv) -> int:
     if a.child:
         # The stage must finish even when the terminal that started run-stage.py sends Ctrl+C.
         ignore_interrupts()
-        stage = next(x["stage"] for x in run_plan(9) if x["key"] == a.key)
+        stage = plan_step(run_plan(9), a.key)["stage"]
         code = invoke_stage(stage, ["--run-id", run_id, "--config", config])
         ok = code == 0 or (stage == 10 and code == 1)
         reason = ""
@@ -182,6 +185,15 @@ def main(argv) -> int:
     last = ledger_entry(ledger, a.key)
     if last and last.get("state") == "running":
         set_ledger_entry(run_dir, a.key, "stage", "failed", "interrupted: the runner died before it recorded a result", update=True)
+    # Inputs (lib\stages.py, needs): a stage whose inputs are missing is refused before it starts, and the refusal
+    # is recorded, so next-step reports it as a stop with the missing files instead of printing the stage again.
+    missing = missing_message(run_dir, nxt["stage"])
+    if missing:
+        set_ledger_entry(run_dir, a.key, "stage", "failed", "missing input: " + "; ".join(missing_needs(run_dir, nxt["stage"])),
+                         {"exitCode": 2})
+        print(missing)
+        print(f"Diagnose: {command('diagnose.py', '--run-id', run_id)}")
+        return 2
     # Lock first (held by this process), so no one sees a running step without a live lock holder.
     write_json(lock_file, {"pid": os.getpid(), "key": a.key, "startedAt": now_iso()})
     set_ledger_entry(run_dir, a.key, "stage", "running", nxt["reason"])

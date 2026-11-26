@@ -1,4 +1,5 @@
-"""Unit tests for the UpgradeLens orchestration and guards (scripts\\lib\\orchestration.py, resolve_run_id).
+"""Unit tests for the UpgradeLens orchestration and guards (scripts\\lib\\plan.py, ledger.py, guards.py,
+agent_checks.py, agents.py, resolve_run_id).
 
 Run from the repository root:
     python -m pytest tests
@@ -10,11 +11,13 @@ import os
 import pytest
 
 from lib.core import resolve_run_id, write_json
-from lib.orchestration import (agent_key_step, max_stage_attempts, agent_write_scope, compare_fingerprint, file_tree_hashes, next_action,
-                               run_plan, set_ledger_entry, new_ledger, read_ledger, check_analyst_proposal as analyst_check,
-                               find_test_gaps as gaps_of, needs_repair,
-                               check_release_notes_proposal as notes_check, check_review_answer as review_check,
-                               check_tests_proposal as manifest_check)
+from lib.agent_checks import (check_analyst_proposal as analyst_check, check_release_notes_proposal as notes_check,
+                               check_review_answer as review_check, check_tests_proposal as manifest_check)
+from lib.agents import agent_write_scope
+from lib.analysis import find_test_gaps as gaps_of, needs_repair
+from lib.guards import compare_fingerprint, file_tree_hashes
+from lib.ledger import new_ledger, read_ledger, set_ledger_entry
+from lib.plan import agent_key_step, max_stage_attempts, next_action, run_plan
 
 
 def ledger(*entries):

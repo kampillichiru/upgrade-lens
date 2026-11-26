@@ -1,7 +1,7 @@
 """Tells the UpgradeLens orchestrator the one next action of a run, as JSON. The orchestrator never chooses
 the order itself: it runs this, does exactly the action it prints, and runs it again.
 
-The plan is fixed (lib\\orchestration.py, run_plan):
+The plan is fixed (lib\\plan.py, run_plan):
 
   stage 0, 1, 2, 3 -> release-notes agent -> stage 4 -> analyst agent -> stage 4 again (merge)
   -> stage 5 (probes) -> test writer agent (every gap in artifacts\\test-gaps.json) -> stage 5 (tests)
@@ -35,8 +35,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.core import (command, config_value, get, read_json_safe, resolve_config_path, run_main,  # noqa: E402
                       runs_root, to_int)
-from lib.orchestration import (AGENT_FILES, max_stage_attempts, ledger_path, next_action, read_ledger, run_facts, run_plan,  # noqa: E402
-                               set_ledger_entry)
+from lib.agents import AGENTS  # noqa: E402
+from lib.facts import run_facts  # noqa: E402
+from lib.ledger import ledger_path, read_ledger, set_ledger_entry  # noqa: E402
+from lib.plan import max_stage_attempts, next_action, run_plan  # noqa: E402
 
 
 def emit(obj: dict, code: int = 0) -> int:
@@ -100,12 +102,12 @@ def main(argv) -> int:
     elif act == "run-agent":
         out["step"] = nxt["step"]
         out["attempt"] = nxt["attempt"]
-        out["subagent"] = AGENT_FILES[nxt["step"]]["agent"]
+        out["subagent"] = AGENTS[nxt["step"]].agent
         out["beginCommand"] = command("agent-step.py", "--run-id", run_id, "--key", nxt["key"], "--action", "begin", "--config", config)
         out["endCommand"] = command("agent-step.py", "--run-id", run_id, "--key", nxt["key"], "--action", "end", "--config", config)
     elif act == "end-agent":
         out["step"] = nxt["step"]
-        out["subagent"] = AGENT_FILES[nxt["step"]]["agent"]
+        out["subagent"] = AGENTS[nxt["step"]].agent
         out["endCommand"] = command("agent-step.py", "--run-id", run_id, "--key", nxt["key"], "--action", "end", "--config", config)
     elif act == "stop":
         out["summary"] = summary if os.path.isfile(summary) else ""

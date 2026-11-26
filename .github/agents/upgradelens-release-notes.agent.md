@@ -1,6 +1,6 @@
 ---
 name: upgradelens-release-notes
-description: UpgradeLens release-notes subagent. Checks each library API change the code uses, and each major direct dependency change, against the official release notes or migration guide, with source URL and quote. Started only by upgradelens-orchestrator.
+description: UpgradeLens release-notes subagent. Checks each library API change the code uses, and each major direct dependency change, against the official release notes or migration guide, with source URL and quote. Started by upgradelens-orchestrator, in a full run or on its own (run-agent.py).
 target: vscode
 user-invocable: false
 tools: ['read', 'search', 'execute', 'edit', 'web']
@@ -37,7 +37,7 @@ In the run folder `runs\<run id>\`:
    Quote the sentence that decides it (at most 30 words).
 4. Add the behavior notes the source gives for the same step that can affect this code (changed defaults,
    removed configuration, changed serialization), as `impact`. Tie each one to the code lines in `usage`.
-5. Write `runs\<run id>\artifacts\agent\release-notes.json`:
+5. Write `release-notes.json` in your output folder (named in your prompt; in a full run `runs\<run id>\artifacts\agent\`):
 
 ```json
 {
@@ -70,6 +70,6 @@ The end check rejects the file when an item is missing for a required ref, when 
 
 - Every `confirmed` or `contradicted` needs a URL and a quote from it. Without one, the result is `not-found`.
 - Do not invent a version, a URL or a quote. If a page cannot be fetched, say so in `impact` and use `not-found`.
-- Write only `artifacts\agent\release-notes.json`. Do not edit the worktrees, the repository or `config\`.
+- Write only `release-notes.json` in your output folder. Do not edit the worktrees, the repository or `config\`.
 - Do not send repository content, names or paths to a web search. Search for the library, its versions and the
   class or member names only.

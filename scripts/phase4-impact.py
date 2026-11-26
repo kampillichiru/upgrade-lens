@@ -42,7 +42,8 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.analysis import finding_affects_flow, flow_coverage, read_unified_patch, rule_findings  # noqa: E402
-from lib.core import (ROOT_DIR, TOOL_VERSION, agent_proposal, as_list, config_value, get, icontains, input_hash, items,  # noqa: E402
+from lib.agents import agent_proposal  # noqa: E402
+from lib.core import (ROOT_DIR, TOOL_VERSION, as_list, config_value, get, icontains, input_hash, items,  # noqa: E402
                       like, log, parse_jacoco_xml, ps_sorted, read_json_safe, read_lines, reach_set, resolve_config_path,
                       resolve_project_path, resolve_run_id, run_main, run_native, runs_root, s, set_run_state, set_stage_log,
                       set_stage_step, sort_key, source_flows, source_index, unique_sorted, write_json)
