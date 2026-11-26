@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.core import (command, config_value, get, read_json_safe, resolve_config_path, run_main,  # noqa: E402
                       runs_root, to_int)
-from lib.orchestration import (AGENT_FILES, ledger_path, next_action, read_ledger, run_facts, run_plan,  # noqa: E402
+from lib.orchestration import (AGENT_FILES, max_stage_attempts, ledger_path, next_action, read_ledger, run_facts, run_plan,  # noqa: E402
                                set_ledger_entry)
 
 
@@ -81,13 +81,14 @@ def main(argv) -> int:
     nxt = None
     for _ in range(50):
         ledger = read_ledger(run_dir)
-        nxt = next_action(plan, ledger, run_facts(run_dir, ledger), max_attempts)
+        nxt = next_action(plan, ledger, run_facts(run_dir, ledger), max_attempts, max_stage_attempts(run_cfg))
         if nxt["action"] != "skip":
             break
         kind = next(x["kind"] for x in plan if x["key"] == nxt["key"])
         set_ledger_entry(run_dir, nxt["key"], kind, "skipped", nxt["reason"])
 
     report = os.path.join(run_dir, "reports", "report.md")
+    summary = os.path.join(run_dir, "reports", "summary.md")
     out = {"runId": run_id, "action": nxt["action"], "key": nxt["key"], "reason": nxt["reason"]}
     act = nxt["action"]
     if act == "run-stage":
@@ -107,6 +108,7 @@ def main(argv) -> int:
         out["subagent"] = AGENT_FILES[nxt["step"]]["agent"]
         out["endCommand"] = command("agent-step.py", "--run-id", run_id, "--key", nxt["key"], "--action", "end", "--config", config)
     elif act == "stop":
+        out["summary"] = summary if os.path.isfile(summary) else ""
         out["report"] = report if os.path.isfile(report) else ""
         out["ledger"] = ledger_path(run_dir)
         return emit(out, 1)
@@ -114,6 +116,7 @@ def main(argv) -> int:
         v = read_json_safe(os.path.join(run_dir, "verdict.json"))
         out["verdict"] = get(v, "verdict", default="")
         out["blocking"] = list(get(v, "blocking", default=[]))
+        out["summary"] = summary
         out["report"] = report
         out["newTests"] = os.path.join(run_dir, "artifacts", "new-tests.json")
     return emit(out, 0)

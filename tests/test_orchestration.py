@@ -10,7 +10,7 @@ import os
 import pytest
 
 from lib.core import resolve_run_id, write_json
-from lib.orchestration import (agent_key_step, agent_write_scope, compare_fingerprint, file_tree_hashes, next_action,
+from lib.orchestration import (agent_key_step, max_stage_attempts, agent_write_scope, compare_fingerprint, file_tree_hashes, next_action,
                                run_plan, set_ledger_entry, new_ledger, read_ledger, check_analyst_proposal as analyst_check,
                                find_test_gaps as gaps_of, needs_repair,
                                check_release_notes_proposal as notes_check, check_review_answer as review_check,
@@ -99,9 +99,27 @@ class TestNextAction:
         led = ledger(*[entry(k, "done") for k in UP_TO_3], entry("agent-release-notes", "running", "", "agent"))
         assert next_action(PLAN, led, facts())["action"] == "end-agent"
 
-    def test_stops_when_a_stage_is_marked_running_but_no_process_holds_the_lock(self):
+    def test_retries_once_when_a_stage_is_marked_running_but_no_process_holds_the_lock(self):
         led = ledger(entry("stage-0", "done"), entry("stage-1", "running"))
-        assert next_action(PLAN, led, facts())["action"] == "stop"
+        a = next_action(PLAN, led, facts())
+        assert (a["action"], a["key"], a["attempt"]) == ("run-stage", "stage-1", 2)
+        twice = ledger(entry("stage-0", "done"), entry("stage-1", "failed", "interrupted: the runner died"), entry("stage-1", "running"))
+        assert next_action(PLAN, twice, facts(), 2, 2)["action"] == "stop"
+
+    def test_retries_a_stage_killed_by_ctrl_c_once_then_stops(self):
+        killed = dict(entry("stage-1", "failed", "exit 3221225786"), exitCode=3221225786)
+        a = next_action(PLAN, ledger(entry("stage-0", "done"), killed), facts())
+        assert (a["action"], a["key"], a["attempt"]) == ("run-stage", "stage-1", 2)
+        assert next_action(PLAN, ledger(entry("stage-0", "done"), killed, killed), facts(), 2, 2)["action"] == "stop"
+        assert next_action(PLAN, ledger(entry("stage-0", "done"), killed, killed), facts(), 2, 3)["attempt"] == 3
+
+    def test_reads_the_stage_attempt_limit_from_the_config(self):
+        assert max_stage_attempts({}) == 3
+        assert max_stage_attempts({"orchestration": {"maxStageAttempts": 1}}) == 1
+
+    def test_never_retries_a_real_failure(self):
+        build_failed = dict(entry("stage-1", "failed", "build-main: mvn exit code 1"), exitCode=4)
+        assert next_action(PLAN, ledger(entry("stage-0", "done"), build_failed), facts())["action"] == "stop"
 
     def test_runs_the_test_writer_after_the_probes_when_there_are_gaps(self):
         a = next_action(PLAN, done_ledger(UP_TO_PROBES), facts(gapCount=3))

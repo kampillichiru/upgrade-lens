@@ -44,6 +44,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.analysis import new_added_file_patch  # noqa: E402
+from lib.summary import build_summary, markdown_to_html  # noqa: E402
 from lib.core import (TOOL_VERSION, agent_proposal, as_list, file_sha256, get, icontains, items, like, log, native_path,  # noqa: E402
                       read_json_safe, read_lines, resolve_config_path, resolve_run_id, run_main, runs_root, s, set_run_state,
                       set_stage_log, set_stage_step, short, unique, write_json, write_text)
@@ -576,6 +577,11 @@ def main(argv) -> int:
     h.append("</body></html>")
     write_text(os.path.join(reports_dir, "report.html"), "\n".join(h) + "\n")
 
+    # The one-page summary (lib\summary.py): the answer, changes, coverage, new tests, differences, run trace.
+    summary_md = build_summary(run_dir, run_id)
+    write_text(os.path.join(reports_dir, "summary.md"), "\r\n".join(summary_md) + "\r\n")
+    write_text(os.path.join(reports_dir, "summary.html"), markdown_to_html(summary_md, f"Upgrade check summary {run_id}"))
+    log(f"summary: {os.path.join(reports_dir, 'summary.md')}")
     log(f"report: {os.path.join(reports_dir, 'report.md')}")
     log(f"report: {os.path.join(reports_dir, 'report.html')}")
     log(f"findings: {os.path.join(reports_dir, 'findings.json')}")

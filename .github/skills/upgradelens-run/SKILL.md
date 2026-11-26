@@ -30,12 +30,16 @@ Repeat until the action is `done` or `stop`:
    | `wait` | Run `command` until it returns something other than 10. |
    | `run-agent` | (a) Run `beginCommand`. It prints JSON with `prompt` and `endCommand`. Exit 2: go to 1. (b) Start the subagent named in `subagent` with `prompt` as its whole task, word for word: do not add, shorten or explain. If your tool has no agent with that name (Claude Code), start a general-purpose subagent with the same `prompt`: it names the `.github/agents/` file the subagent follows. (c) When it returns, run `endCommand`, even if the subagent says it failed. (d) Go to 1. |
    | `end-agent` | Run `endCommand`, then go to 1. |
-   | `stop` | Stop. Report `reason`, `report` and `ledger`. Do not work around it. |
+   | `stop` | Stop. Report `reason`, `summary` (its run trace shows the failed step and the log to open), `report` and `ledger`. Do not work around it. |
    | `done` | Report (see below). |
 
 3. Keep a short to-do list of the steps done, so the user can follow.
 
 ## Report at the end
+
+Start from `runs\<id>\reports\summary.md`: it answers, in order, what changed, whether the existing tests ran it,
+which new tests were written and their result on both branches, every difference found, and what was not checked.
+Give the user its section 1, the differences of section 5, and the path to it. Then:
 
 - The verdict and each blocking reason (from the `done` output or `runs\<id>\verdict.json`).
 - The report: `runs\<id>\reports\report.md` (and `.html`). Point to section 8a (impact in simple words, with
@@ -51,7 +55,12 @@ Repeat until the action is `done` or `stop`:
 
 - Order: `run-stage.py` and `agent-step.py --action begin` refuse any step that next-step did not print
   (exit 2, "Out of order"). Stage scripts of an orchestrated run refuse to run directly.
-- One stage at a time: a lock per run. Long stages run detached; exit 10 only means "still running".
+- One stage at a time: a lock per run. Long stages run detached and ignore Ctrl+C; exit 10 only means "still
+  running", and stopping a `waitCommand` does not stop the stage.
+- A stage that was interrupted (killed, or its runner died) is retried once: next-step prints it again as
+  `run-stage` with `attempt` 2. Stage 5 first restores anything the interrupted pass left in the worktrees. A
+  stage that failed for a real reason (build, tool, usage) is not retried: next-step prints `stop`.
+- In a test repair round, stage 5 reruns only the tests the repair changed; the others keep their results.
 - Agent write scope: `end` compares a fingerprint of the run folder, both worktrees' git state, and the tool's
   scripts, config, agents and skills. Any change outside the agent's own files stops the run.
 - Agent output checks: stale input hash, a gap with no test and no reason, a changed method with no reason, a

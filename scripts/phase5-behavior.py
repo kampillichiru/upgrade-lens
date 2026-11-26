@@ -30,6 +30,7 @@ Example:
 
 import argparse
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -311,6 +312,7 @@ def main(argv) -> int:
     # from change_branch's own files (stage 8 places them again). Only files whose bytes are still the ones
     # stage 8 wrote are removed; anything else is left alone and reported.
     placed_record = art("new-tests.json")
+    edited_by_developer = set()
     for pl in items(get(placed_record, "placed")):
         dst = os.path.join(head_wt, native_path(pl.get("relativePath")))
         if not os.path.isfile(dst):
@@ -319,11 +321,43 @@ def main(argv) -> int:
             os.remove(dst)
             log(f"tests: removed {pl.get('relativePath')} placed by stage 8, before the run")
         else:
+            edited_by_developer.add(s(pl.get("relativePath")))
             log(f"tests: {pl.get('relativePath')} in the head worktree was edited after stage 8 placed it; left as is")
 
-    def run_test_classes(sd: dict, class_names) -> dict:
+    git = s(get(cfg, "git", "command", default="git"))
+
+    def repair_worktrees(manifest: dict) -> None:
+        """A stage that was killed (Ctrl+C, a closed terminal, a crash) cannot run its cleanup, so an injected
+        regression or a copied test file can be left in a worktree. The worktrees are the run's own clean checkouts,
+        so before the tests run: a file named by an injection that git reports modified is restored from git, and a
+        test file of the manifest that git reports untracked (a copy from the killed pass) is removed. A test that
+        stage 8 placed and a developer then edited is left alone."""
+        inj_files = {s(i.get("file")) for t in items(manifest.get("tests")) for i in items(t.get("injections")) if i.get("file")}
+        test_files = {s(t.get("relativePath")) for t in items(manifest.get("tests"))} - edited_by_developer
+        for sd in sides:
+            st = run_native(git, ["-C", sd["worktree"], "status", "--porcelain=v1", "--untracked-files=all"])
+            for line in st.output:
+                code, path = line[:2], line[3:].strip().strip('"')
+                if code.strip() == "M" and path in inj_files:
+                    r = run_native(git, ["-C", sd["worktree"], "checkout", "--", path])
+                    log(f"tests: repaired {sd['side']} {path}: an injected regression from an interrupted pass was restored "
+                        f"from git (exit {r.exit_code})")
+                elif code == "??" and path in test_files:
+                    os.remove(os.path.join(sd["worktree"], native_path(path)))
+                    log(f"tests: repaired {sd['side']}: removed {path} left by an interrupted pass")
+
+    def test_fingerprint(t: dict) -> str:
+        """Identity of one proposed test: its manifest entry and its file. Within a run the source of both branches
+        does not change, so a test with the same fingerprint gives the same results."""
+        src = os.path.join(artifacts, "agent", "tests", native_path(t.get("relativePath")))
+        file_hash = file_sha256(src) if os.path.isfile(src) else "missing"
+        return hashlib.sha256((json.dumps(t, sort_keys=True) + file_hash).encode("utf-8")).hexdigest().upper()
+
+    def run_test_classes(sd: dict, class_names, label: str) -> dict:
         """Runs the named test classes on one worktree; returns per-class results from the surefire XML."""
         wt = sd["worktree"]
+        started = time.time()
+        log(f"tests: {label}: running {len(class_names)} class(es) on {sd['side']}")
         test_log = os.path.join(logs_dir, f"tests-{sd['side']}-{datetime.datetime.now():%H%M%S%f}.log")
         args = ["-B", "-ntp"] + (["-s", settings] if settings else []) + [
             "-f", os.path.join(wt, "pom.xml"), "test", f"-Dtest={','.join(class_names)}", "-Dsurefire.failIfNoSpecifiedTests=false"]
@@ -348,6 +382,8 @@ def main(argv) -> int:
             else:
                 detail = f"{tests_run} test(s) passed"
             out[c] = {"ran": True, "passed": failed == 0 and tests_run > 0, "detail": detail, "log": test_log}
+        summary = ", ".join(f"{c} {'pass' if v['passed'] else ('FAIL' if v['ran'] else 'not run')}" for c, v in out.items())
+        log(f"tests: {label}: done in {int(time.time() - started)} s ({summary})")
         return out
 
     if os.path.isfile(manifest_path):
@@ -360,9 +396,43 @@ def main(argv) -> int:
             test_state = "run"
             placed = []
             try:
+                repair_worktrees(manifest)
+                # A repair round changes only some tests. A test whose fingerprint matches its result from the earlier
+                # pass keeps that result; only the changed tests run again (with all their injections).
+                previous = {p.get("id"): p for p in items(get(art("behavior-results.json"), "tests"))}
+                prints = {t.get("id"): test_fingerprint(t) for t in items(manifest.get("tests"))}
+
+                def reusable(t):
+                    p = previous.get(t.get("id"))
+                    return bool(p) and p.get("fingerprint") == prints[t.get("id")] and "ran" in (p.get("base") or {}) \
+                        and "ran" in (p.get("head") or {})
+
+                rerun_classes = {t.get("className") for t in items(manifest.get("tests")) if not reusable(t)}
+                to_run = [t for t in items(manifest.get("tests")) if t.get("className") in rerun_classes]
+                reused = [t for t in items(manifest.get("tests")) if t.get("className") not in rerun_classes]
+                total_injections = sum(len(items(t.get("injections"))) for t in to_run)
+                log(f"tests: {len(to_run)} test(s) to run with {total_injections} injection(s); {len(reused)} unchanged since the "
+                    f"earlier pass, results kept: {', '.join(s(t.get('id')) for t in reused) or 'none'}")
+                for t in reused:
+                    row = dict(previous[t.get("id")], reused=True)
+                    test_rows.append(row)
+                    b, h = row["base"], row["head"]
+                    for rule in as_list(t.get("linkedRules")):
+                        if not h["ran"] or not b["ran"]:
+                            outcome = "error"
+                        elif b["passed"] and not h["passed"]:
+                            outcome = "different"
+                        elif not b["passed"]:
+                            outcome = "unverified"
+                        else:
+                            outcome = "same"
+                        checks.append({"ruleId": rule, "source": "test", "id": t.get("id"), "outcome": outcome})
+                    if not h["ran"]:
+                        blocking_errors.append(f"test {t.get('id')} did not run on head: {h['detail']}")
+
                 # Copy the proposed test files into both worktrees. A path that already exists is a conflict.
                 # Several tests can share one class file: copy each file once per side.
-                for rel in unique_sorted([t.get("relativePath") for t in items(manifest.get("tests"))]):
+                for rel in unique_sorted([t.get("relativePath") for t in to_run]):
                     src = os.path.join(artifacts, "agent", "tests", native_path(rel))
                     if not os.path.isfile(src):
                         raise RuntimeError(f"proposed test file missing: {src}")
@@ -373,14 +443,16 @@ def main(argv) -> int:
                         os.makedirs(os.path.dirname(dst), exist_ok=True)
                         shutil.copyfile(src, dst)
                         placed.append(dst)
-                classes = unique_sorted([t.get("className") for t in items(manifest.get("tests"))])
+                classes = unique_sorted([t.get("className") for t in to_run])
                 base_side, head_side = sides
-                base_res = run_test_classes(base_side, classes)
-                head_res = run_test_classes(head_side, classes)
+                base_res = run_test_classes(base_side, classes, "master") if classes else {}
+                head_res = run_test_classes(head_side, classes, "change_branch") if classes else {}
 
-                for t in items(manifest.get("tests")):
+                done_injections = 0
+                for t in to_run:
                     injections = []
                     for inj in items(t.get("injections")):
+                        done_injections += 1
                         target = os.path.join(head_side["worktree"], native_path(inj.get("file")))
                         if not os.path.isfile(target):
                             injections.append({"note": inj.get("note"), "applied": False, "detected": False,
@@ -400,7 +472,8 @@ def main(argv) -> int:
                         try:
                             with open(target, "wb") as f:
                                 f.write(original.replace(find, replace).encode("utf-8"))
-                            res = run_test_classes(head_side, [t.get("className")])[t.get("className")]
+                            label = f"injection {done_injections}/{total_injections} {t.get('id')} ({s(inj.get('note'))[:60]})"
+                            res = run_test_classes(head_side, [t.get("className")], label)[t.get("className")]
                             injections.append({"note": inj.get("note"), "applied": True, "detected": res["ran"] and not res["passed"],
                                                "detail": res["detail"]})
                         finally:
@@ -415,8 +488,11 @@ def main(argv) -> int:
                         "id": t.get("id"), "className": t.get("className"), "relativePath": t.get("relativePath"),
                         "purpose": s(t.get("purpose")), "gap": s(t.get("gap")), "linkedRules": as_list(t.get("linkedRules")),
                         "flowIds": as_list(t.get("flowIds")), "methods": as_list(t.get("methods")),
-                        "base": {"passed": b["passed"], "detail": b["detail"]}, "head": {"passed": h["passed"], "detail": h["detail"]},
+                        "base": {"ran": b["ran"], "passed": b["passed"], "detail": b["detail"]},
+                        "head": {"ran": h["ran"], "passed": h["passed"], "detail": h["detail"]},
                         "injections": injections,
+                        "fingerprint": prints[t.get("id")],
+                        "reused": False,
                         # Validated: passes on master, passes unchanged on change_branch, and fails for every injected
                         # regression (at least one injection is required; a test that cannot detect a regression proves nothing).
                         "detectsInjected": all_detected,
@@ -443,6 +519,8 @@ def main(argv) -> int:
                 for path in placed:
                     if os.path.isfile(path):
                         os.remove(path)
+        order = [t.get("id") for t in items(manifest.get("tests"))]
+        test_rows.sort(key=lambda r: order.index(r.get("id")) if r.get("id") in order else len(order))
     else:
         log("tests: no proposed tests (artifacts\\agent\\tests-manifest.json missing)")
 

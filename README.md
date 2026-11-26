@@ -43,6 +43,7 @@ Every tunable value is in `config\upgrade-lens.json`. Pass another file with `--
 | `dependencies.ignoreUnused` | `group:artifact` patterns that are never "unnecessary" (runtime-only libraries) | none |
 | `library.enabled`, `library.maxMembersPerClass` | library API diff on or off, members listed per class | true, 40 |
 | `agentBudget` | agent calls per run | 12 |
+| `orchestration.maxStageAttempts` | tries of a stage that was interrupted (killed, runner died); a real failure is never retried | 3 |
 | `owners.reviewer`, `owners.riskAcceptor` | owners of the manual review items | unassigned |
 
 Check it, without creating anything: `python scripts/check-prereq.py`.
@@ -76,6 +77,11 @@ The release-notes agent then checks each high or medium item, and each direct de
 major version, against the library's own release notes or migration guide.
 
 ### The report
+
+Start with `runs\<id>\reports\summary.md` (and `.html`): one page that answers what changed, whether the existing
+tests ran it on both branches, which new tests were written and their result on both branches, every difference found,
+what was not checked, and a run trace (each step, its attempts, duration, result, and the log to open when it failed).
+The detailed report below is the evidence behind it.
 
 `runs\<id>\reports\report.md` (and `.html`) is one document: verdict; run, configuration and workspace; builds
 and the test comparison; changed files; changed classes and methods with their reason and coverage;

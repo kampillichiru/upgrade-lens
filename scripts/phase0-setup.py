@@ -124,7 +124,7 @@ def main(argv) -> int:
         add_check("config build.integrationTests", False, f"must be auto or failsafe-only; found '{it_mode}'")
         config_ok = False
     for t in ("timeouts.buildMinutes", "timeouts.startupSeconds", "agentBudget", "library.maxMembersPerClass",
-              "orchestration.maxAgentAttempts", "orchestration.maxTests"):
+              "orchestration.maxAgentAttempts", "orchestration.maxStageAttempts", "orchestration.maxTests"):
         v = config_value(cfg, t)
         if v is not None and not (re.fullmatch(r"\d+", s(v)) and int(s(v)) > 0):
             add_check(f"config {t}", False, f"must be a positive whole number; found '{s(v)}'")

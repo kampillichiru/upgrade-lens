@@ -15,7 +15,7 @@ import os
 import re
 
 from .analysis import finding_status
-from .core import (IS_WINDOWS, as_list, file_sha256, get, items, like, now_iso, ps_sorted, read_json_safe, read_text, sort_key,
+from .core import (INTERRUPTED_EXIT_CODES, IS_WINDOWS, as_list, file_sha256, get, items, like, now_iso, ps_sorted, read_json_safe, read_text, sort_key,
                    run_native, s, to_int, unique, unique_sorted, write_json)
 
 AGENT_FILES = {
@@ -128,7 +128,18 @@ def step_needed(step: dict, ledger, facts: dict) -> dict:
     return {"needed": True, "reason": ""}
 
 
-def next_action(plan, ledger, facts: dict, max_agent_attempts: int = 2) -> dict:
+def max_stage_attempts(cfg) -> int:
+    """Attempts of one stage when it is interrupted (config orchestration.maxStageAttempts, default 3). An
+    interruption comes from the machine, not from the code under test, so a stage may be tried again."""
+    return max(1, to_int(get(cfg, "orchestration", "maxStageAttempts"), 3) or 3)
+
+
+def stage_interrupted(entry: dict) -> bool:
+    """A stage attempt that ended by an interruption (Ctrl+C, or a runner that died), not by a failed check."""
+    return to_int(entry.get("exitCode"), 0) in INTERRUPTED_EXIT_CODES or s(entry.get("reason")).startswith("interrupted:")
+
+
+def next_action(plan, ledger, facts: dict, max_agent_attempts: int = 2, max_stage_attempts: int = 2) -> dict:
     """The one next action of a run: run-stage, run-agent, end-agent, wait, skip, stop or done.
     Pure: the ledger, the facts and the limits in, one action out.
       skip      the caller records the skip and asks again
@@ -141,15 +152,25 @@ def next_action(plan, ledger, facts: dict, max_agent_attempts: int = 2) -> dict:
         e = ledger_entry(ledger, st["key"])
         if e and e.get("state") in ("done", "skipped"):
             continue
+        stage_attempts = len([x for x in as_list(get(ledger, "entries")) if x and x.get("key") == st["key"]])
         if e and e.get("state") == "running":
             if st["kind"] == "agent":
                 return {"action": "end-agent", "key": st["key"], "step": st["step"],
                         "reason": "the agent step was begun and not ended"}
+            # No lock holder (a held lock gives "wait" above): the runner died. Retry it, like an interruption.
+            if stage_attempts < max_stage_attempts:
+                return {"action": "run-stage", "key": st["key"], "stage": st["stage"], "attempt": stage_attempts + 1,
+                        "reason": f"retry: the runner of stage {st['key']} died before it recorded a result"}
             return {"action": "stop", "key": st["key"],
                     "reason": f"stage {st['key']} is marked running but no runner holds the lock: the runner died. Start a new run."}
         if e and e.get("state") == "failed":
             reason = s(e.get("reason"))
             if st["kind"] == "stage":
+                # A stage that was interrupted (Ctrl+C, a killed runner) did not fail a check: retry it, a limited
+                # number of times. A real failure (build, tool, usage) stops the run.
+                if stage_interrupted(e) and stage_attempts < max_stage_attempts:
+                    return {"action": "run-stage", "key": st["key"], "stage": st["stage"], "attempt": stage_attempts + 1,
+                            "reason": f"retry: stage {st['key']} was interrupted (exit {e.get('exitCode')}), not failed"}
                 return {"action": "stop", "key": st["key"],
                         "reason": f"stage {st['key']} failed (exit {e.get('exitCode')}): {reason}"}
             if like(reason, "budget:*"):

@@ -352,15 +352,39 @@ def tail(path: str, n: int) -> list[str]:
         return []
 
 
+INTERRUPTED_EXIT_CODES = {130, -2, 3221225786, -1073741510}  # Ctrl+C: POSIX SIGINT, Windows STATUS_CONTROL_C_EXIT
+
+
+def ignore_interrupts() -> None:
+    """A stage runs detached and must finish even when the terminal that started it sends Ctrl+C or Ctrl+Break
+    (an interrupted wait, a closed chat tool). Inherited by the processes it starts (Maven, the JVMs)."""
+    import signal
+    for name in ("SIGINT", "SIGBREAK"):
+        if hasattr(signal, name):
+            try:
+                signal.signal(getattr(signal, name), signal.SIG_IGN)
+            except (ValueError, OSError):
+                pass
+    if IS_WINDOWS:
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetConsoleCtrlHandler(None, True)
+        except (AttributeError, OSError):
+            pass
+
+
 def run_main(main) -> None:
     """Entry point of a script: its return value is the exit code; an unexpected error is a tool failure
-    (exit 3), never a code that could look like a result (1 is 'blocked' for stage 10)."""
+    (exit 3), never a code that could look like a result (1 is 'blocked' for stage 10). A stage started by
+    run-stage.py ignores Ctrl+C; anything else that is interrupted exits 130."""
+    if os.environ.get("UPGRADELENS_INVOKER") == "run-stage":
+        ignore_interrupts()
     try:
         code = main(sys.argv[1:])
     except SystemExit:
         raise
     except KeyboardInterrupt:
-        code = 3
+        code = 130
     except Exception as e:  # noqa: BLE001 - every failure must become exit 3
         traceback.print_exc()
         print(f"{os.path.basename(sys.argv[0])} failed: {e}")

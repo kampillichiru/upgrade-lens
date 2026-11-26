@@ -32,9 +32,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import json  # noqa: E402
 
-from lib.core import (IS_WINDOWS, as_list, command, config_value, now_iso, read_json_safe, resolve_config_path,  # noqa: E402
-                      run_main, run_script, runs_root, tail, to_int, write_json)
-from lib.orchestration import (ledger_entry, lock_path, new_ledger, next_action, read_ledger, run_facts,  # noqa: E402
+from lib.core import (IS_WINDOWS, as_list, command, config_value, ignore_interrupts, now_iso, read_json_safe,  # noqa: E402
+                      resolve_config_path, run_main, run_script, runs_root, tail, to_int, write_json)
+from lib.orchestration import (ledger_entry, max_stage_attempts, lock_path, new_ledger, next_action, read_ledger, run_facts,  # noqa: E402
                                run_lock, run_plan, set_ledger_entry, stage_script)
 
 
@@ -102,6 +102,8 @@ def main(argv) -> int:
     # ---------- child: runs the stage, records the result, releases the lock ----------
 
     if a.child:
+        # The stage must finish even when the terminal that started run-stage.py sends Ctrl+C.
+        ignore_interrupts()
         stage = next(x["stage"] for x in run_plan(9) if x["key"] == a.key)
         code = invoke_stage(stage, ["--run-id", run_id, "--config", config])
         ok = code == 0 or (stage == 10 and code == 1)
@@ -164,7 +166,8 @@ def main(argv) -> int:
     run_cfg = read_json_safe(os.path.join(run_dir, "config", "upgrade-lens.json"))
     plan = run_plan(to_int(config_value(run_cfg, "orchestration.maxTestRepairRounds", 1), 1))
     ledger = read_ledger(run_dir)
-    nxt = next_action(plan, ledger, run_facts(run_dir, ledger), to_int(config_value(run_cfg, "orchestration.maxAgentAttempts", 2), 2))
+    nxt = next_action(plan, ledger, run_facts(run_dir, ledger), to_int(config_value(run_cfg, "orchestration.maxAgentAttempts", 2), 2),
+                      max_stage_attempts(run_cfg))
     if nxt["action"] == "wait":
         print(f"Stage {nxt['key']} is running. Run: {command('run-stage.py', '--run-id', run_id, '--wait')}")
         return 2
@@ -174,6 +177,11 @@ def main(argv) -> int:
         return 2
 
     os.makedirs(orch_dir, exist_ok=True)
+    # A retry after an interruption: an attempt whose runner died is still marked running. Close it first, so the
+    # ledger shows the interrupted attempt and the retry as two attempts.
+    last = ledger_entry(ledger, a.key)
+    if last and last.get("state") == "running":
+        set_ledger_entry(run_dir, a.key, "stage", "failed", "interrupted: the runner died before it recorded a result", update=True)
     # Lock first (held by this process), so no one sees a running step without a live lock holder.
     write_json(lock_file, {"pid": os.getpid(), "key": a.key, "startedAt": now_iso()})
     set_ledger_entry(run_dir, a.key, "stage", "running", nxt["reason"])
@@ -205,7 +213,10 @@ def start_detached(args, out_log: str, err_log: str) -> subprocess.Popen:
     env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8")
     try:
         if IS_WINDOWS:
-            base = 0x00000008 | 0x00000200  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+            # CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP: the stage gets its own hidden console, which the stage
+            # scripts, Maven and the JVMs inherit. (DETACHED_PROCESS would leave it without a console, so each stage
+            # script would open a visible console window; closing that window kills the stage.)
+            base = 0x08000000 | 0x00000200
             try:
                 return subprocess.Popen(args, stdout=out, stderr=err, stdin=subprocess.DEVNULL, env=env,
                                         creationflags=base | 0x01000000)  # CREATE_BREAKAWAY_FROM_JOB

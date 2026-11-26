@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.core import (ROOT_DIR, agent_inputs, as_list, command, config_value, file_sha256, get, input_hash, items,  # noqa: E402
                       native_path, now_iso, read_json_safe, resolve_config_path, run_main, runs_root, s, to_int, write_json)
-from lib.orchestration import (AGENT_FILES, agent_key_step, agent_prompt, agent_write_scope, check_analyst_proposal,  # noqa: E402
+from lib.orchestration import (AGENT_FILES, max_stage_attempts, agent_key_step, agent_prompt, agent_write_scope, check_analyst_proposal,  # noqa: E402
                                check_release_notes_proposal, check_review_answer, check_tests_proposal, compare_fingerprint,
                                file_tree_hashes, ledger_entry, next_action, protected_fingerprint, read_ledger,
                                release_notes_refs, run_facts, run_plan, set_ledger_entry)
@@ -113,7 +113,7 @@ def main(argv) -> int:
     # ---------- begin ----------
 
     if a.action == "begin":
-        nxt = next_action(plan, ledger, run_facts(run_dir, ledger), max_attempts)
+        nxt = next_action(plan, ledger, run_facts(run_dir, ledger), max_attempts, max_stage_attempts(cfg))
         if nxt["action"] != "run-agent" or nxt["key"] != key:
             print(f"Out of order: next-step says '{nxt['action']} {nxt['key']}', not 'run-agent {key}'. "
                   f"Run {command('next-step.py', '--run-id', run_id)} and do what it prints.")
