@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 860" width="1000" height="860" role="img" xmlns:c2pa="http://c2pa.org/manifest">
+  <title>Upgrade impact check: architecture</title>
+  <desc>A developer starts an orchestrator. Fixed scripts and judgment agents read and write a shared run folder. Human decisions gate the final report and test branch.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#5F5E5A"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="860" fill="#FFFFFF"/>
+
+  <text x="40" y="44" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#2C2C2A">Upgrade impact check: architecture</text>
+  <text x="40" y="68" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5F5E5A">Scripts produce the facts. Agents interpret them. People decide.</text>
+
+  <!-- Legend -->
+  <rect x="40" y="100" width="14" height="14" rx="3" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="62" y="112" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2C2C2A">Script (fixed, no model cost)</text>
+  <rect x="40" y="124" width="14" height="14" rx="3" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="62" y="136" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2C2C2A">Agent (judgment, model calls)</text>
+  <rect x="40" y="148" width="14" height="14" rx="3" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+  <text x="62" y="160" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2C2C2A">Human decision</text>
+  <rect x="40" y="172" width="14" height="14" rx="3" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="62" y="184" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2C2C2A">Shared state or output</text>
+
+  <!-- Developer -->
+  <rect x="380" y="96" width="240" height="60" rx="10" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="500" y="121" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#2C2C2A">Developer</text>
+  <text x="500" y="142" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#5F5E5A">IntelliJ or VS Code Copilot Chat</text>
+  <line x1="500" y1="156" x2="500" y2="196" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Orchestrator -->
+  <rect x="340" y="196" width="320" height="64" rx="10" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="500" y="222" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#2C2C2A">Orchestrator</text>
+  <text x="500" y="243" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#5F5E5A">Runs stages, gates, status</text>
+  <path d="M440 260 V282 H250 V302" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+  <path d="M560 260 V282 H750 V302" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Scripts panel -->
+  <rect x="40" y="302" width="420" height="254" rx="12" fill="#FAFAF7" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="6 4"/>
+  <text x="60" y="326" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#5F5E5A">Scripts: fixed steps, no model cost</text>
+
+  <rect x="70" y="340" width="360" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="250" y="362" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#0C447C">Build and test</text>
+  <text x="250" y="381" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#185FA5">Both branches, in parallel</text>
+
+  <rect x="70" y="410" width="360" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="250" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#0C447C">Diff and dependencies</text>
+  <text x="250" y="451" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#185FA5">Changed files, dependency tree</text>
+
+  <rect x="70" y="480" width="360" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="250" y="502" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#0C447C">Behavior checks</text>
+  <text x="250" y="521" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#185FA5">Probes, startup, endpoints</text>
+
+  <!-- Agents panel -->
+  <rect x="540" y="302" width="420" height="254" rx="12" fill="#FAFAF7" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="6 4"/>
+  <text x="560" y="326" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#5F5E5A">Agents: judgment, model calls</text>
+
+  <rect x="570" y="340" width="360" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="750" y="362" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#3C3489">Analyst</text>
+  <text x="750" y="381" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#534AB7">Proposes impact hypotheses</text>
+
+  <rect x="570" y="410" width="360" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="750" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#3C3489">Test writer</text>
+  <text x="750" y="451" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#534AB7">Drafts characterization tests</text>
+
+  <rect x="570" y="480" width="360" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="750" y="502" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#3C3489">Reviewer</text>
+  <text x="750" y="521" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#534AB7">Checks tests and report, read-only</text>
+
+  <!-- Run folder -->
+  <line x1="250" y1="556" x2="250" y2="590" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="262" y="578" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5F5E5A">writes results</text>
+  <line x1="700" y1="590" x2="700" y2="556" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="690" y="578" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5F5E5A">reads inputs</text>
+  <line x1="800" y1="556" x2="800" y2="590" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="812" y="578" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5F5E5A">writes proposals</text>
+
+  <rect x="40" y="590" width="920" height="56" rx="10" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="500" y="614" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#2C2C2A">Run folder</text>
+  <text x="500" y="634" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#5F5E5A">Artifacts and status.json, shared by every step</text>
+
+  <!-- Human decisions -->
+  <line x1="500" y1="646" x2="500" y2="690" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="260" y="690" width="480" height="56" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+  <text x="500" y="714" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#633806">Human decisions</text>
+  <text x="500" y="734" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#854F0B">Impact review, approval, risk acceptance</text>
+
+  <!-- Output -->
+  <line x1="500" y1="746" x2="500" y2="776" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="260" y="776" width="480" height="56" rx="10" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="500" y="800" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#2C2C2A">Report and new test branch</text>
+  <text x="500" y="820" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#5F5E5A">Verdict, findings, tests, evidence links</text>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTplZmI2MGRhMC0yZmNmLTRjMGEtOWVjMy0wNDUyYTdmN2RlYTMAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaN2G3/uDWYfZDgpK0Ezyz5UAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDpmMzFkNjc3Zi05ODcxLTQwNjMtOTk2Mi1lODM1N2E5MDYwNGVscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNo+E4iuG+PjOulVTW2/XjD7QAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggujr0RaRwpZjujzHWef739BIoQX9YIAcVXkKbUDIxb4akZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaGSmp0yOzQxhvUvcCZqeJ8cAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIFt7+HnuEuC0AZQ9XV1TYon7m2yONVSrTuJr614n7qxSZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GSErZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOmVmYjYwZGEwLTJmY2YtNGMwYS05ZWMzLTA0NTJhN2Y3ZGVhMy9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmE5NzZhZmYyLTk4NDktNDhmOC04NjYxLTJiNjBkZTMyYjI4YXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCC6OvRFpHClmO6PMdZ5/vf0EihBf1ggBxVeQptQMjFvhqJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggbJMpXRor6sM+VjlL9+0GyziWF9CVzpChmrHMsw9ywaqiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggyp7rqN46vWEB99JLTZTPAJky+Rv08TXs3ck/6ulXq7R0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQBtLT12PbyJk3wDIkjXDTU6BY3Zd7Ocd7/ni8z0xSyu3ock0AFEOZD+x9TddnFxn3DJi1yDgJchATU9SuTiziMI=</c2pa:manifest></metadata></svg>

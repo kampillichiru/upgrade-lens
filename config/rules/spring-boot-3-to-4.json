@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "ruleSet": "spring-boot-3-to-4-and-java-17-to-25",
+  "description": "Pattern rules for a Spring Boot or Java upgrade. Rules are data: add a rule here, not in a script. Fields: id, title, severity (high, medium, low, info), source (diff-added, diff-removed, diff-any, inventory, inventory-findings, dependency, dependency-analyze, api, library-api, it-not-run), fileGlob (optional), pattern (regex, for diff sources), field or types (inventory sources), match (dependency, api and library-api sources), scope (global = every flow, symbol = flows that reach the symbol, test = tests only, none = no flow impact), impact, check.",
+  "rules": [
+    {
+      "id": "R-JAVA-RUNTIME",
+      "title": "Java release or runtime level changed",
+      "severity": "high",
+      "source": "diff-any",
+      "fileGlob": "pom.xml",
+      "pattern": "<java\\.version>|<release>|<maven\\.compiler\\.(release|source|target)>",
+      "scope": "global",
+      "impact": "The bytecode level and the JDK that runs the app change. JDK-dependent behavior (string and time APIs, TLS defaults, reflection) can change.",
+      "check": "Run the startup smoke check and the probes on the target JDK (phase 5)."
+    },
+    {
+      "id": "R-STARTER-REMOVED",
+      "title": "Starter removed from the build",
+      "severity": "high",
+      "source": "diff-removed",
+      "fileGlob": "pom.xml",
+      "pattern": "<artifactId>spring-boot-starter-web</artifactId>",
+      "scope": "global",
+      "impact": "The web starter is replaced. Auto-configuration and MVC defaults can change for every endpoint.",
+      "check": "Probes on every endpoint, and the bean and property dump diff (phase 5)."
+    },
+    {
+      "id": "R-JACOCO-VERSION",
+      "title": "Coverage tool version changed",
+      "severity": "medium",
+      "source": "diff-added",
+      "fileGlob": "pom.xml",
+      "pattern": "<jacoco\\.version>",
+      "scope": "none",
+      "impact": "Coverage numbers and the coverage gate can change. The gate result is part of the build result in phase 1.",
+      "check": "Phase 1 build passed on both sides with the coverage gate enabled."
+    },
+    {
+      "id": "R-JACKSON-PACKAGE",
+      "title": "Jackson package changed (Jackson 2 to 3)",
+      "severity": "high",
+      "source": "diff-any",
+      "fileGlob": "*.java",
+      "pattern": "com\\.fasterxml\\.jackson|tools\\.jackson",
+      "scope": "global",
+      "impact": "Jackson 3 moves the ObjectMapper package and changes some JSON defaults. Request and response bodies on every endpoint can change.",
+      "check": "Probes on JSON request and response bodies (phase 5)."
+    },
+    {
+      "id": "R-TEST-ANNOTATION-PACKAGE",
+      "title": "Test support annotation or package moved",
+      "severity": "medium",
+      "source": "diff-any",
+      "fileGlob": "*.java",
+      "pattern": "AutoConfigureMockMvc|autoconfigure\\.web\\.servlet",
+      "scope": "test",
+      "impact": "The test does not compile or runs with a different configuration after the upgrade. The test result is then not evidence for the new version.",
+      "check": "The test runs and passes on both sides (phase 5)."
+    },
+    {
+      "id": "R-VALIDATION-CHANGE",
+      "title": "Bean validation code changed in main code",
+      "severity": "medium",
+      "source": "diff-any",
+      "fileGlob": "src/main/*",
+      "pattern": "jakarta\\.validation|javax\\.validation|@(Valid|Positive|NotBlank|NotNull|Pattern|Size)\\b",
+      "scope": "symbol",
+      "impact": "Validation constraints or error mapping can change, so invalid requests can be accepted or rejected differently.",
+      "check": "Probes with invalid input on each request body (phase 5)."
+    },
+    {
+      "id": "R-HTTP-MAPPING-CHANGE",
+      "title": "Request mapping or content type changed in main code",
+      "severity": "high",
+      "source": "diff-any",
+      "fileGlob": "src/main/*",
+      "pattern": "@(Get|Post|Put|Delete|Patch)?Mapping|produces|consumes|@ResponseStatus",
+      "scope": "symbol",
+      "impact": "Paths, verbs, status codes or content negotiation can change for the mapped endpoint.",
+      "check": "Probes on the mapped endpoint, including the content type and status code (phase 5)."
+    },
+    {
+      "id": "R-ANNOTATION-CHANGE",
+      "title": "Annotation changed on a main-code declaration",
+      "severity": "high",
+      "source": "inventory",
+      "field": "annotationChanges",
+      "category": "main-code",
+      "scope": "symbol",
+      "impact": "An annotation was added or removed. Its runtime effect is the framework's, so it changes behavior without a change to the method body.",
+      "check": "Probes on the flows that reach the declaration (phase 5)."
+    },
+    {
+      "id": "R-SIGNATURE-CHANGE",
+      "title": "Signature changed on a main-code declaration",
+      "severity": "high",
+      "source": "inventory",
+      "field": "signatureChanges",
+      "category": "main-code",
+      "scope": "symbol",
+      "impact": "The method or type signature changed. Callers and reflection-based frameworks see a different contract.",
+      "check": "Callers in the reach of the symbol are tested (phase 4 reach and phase 5 probes)."
+    },
+    {
+      "id": "R-FIELD-DEFAULT-CHANGE",
+      "title": "Field default changed in main code",
+      "severity": "medium",
+      "source": "inventory",
+      "field": "defaultChanges",
+      "category": "main-code",
+      "scope": "symbol",
+      "impact": "A field default changed, so behavior is different when the value is not set explicitly.",
+      "check": "Probes that rely on the default (phase 5)."
+    },
+    {
+      "id": "R-REMOVED-BRANCH",
+      "title": "Branch or catch block removed in main code",
+      "severity": "medium",
+      "source": "inventory",
+      "field": "removedBranches",
+      "category": "main-code",
+      "scope": "symbol",
+      "impact": "A condition or error path is gone. Inputs that took that path now take a different one.",
+      "check": "A test or probe that takes the removed path (phase 5)."
+    },
+    {
+      "id": "R-TEST-WEAKENED",
+      "title": "Test assertion weakened, test removed or disabled",
+      "severity": "high",
+      "source": "inventory-findings",
+      "types": ["weakened-assertions", "test-removed", "test-disabled"],
+      "scope": "test",
+      "impact": "The test no longer proves what it proved on master. A pass is then not evidence.",
+      "check": "A reviewer confirms the assertion change is intended (phase 7)."
+    },
+    {
+      "id": "R-IT-NOT-RUN",
+      "title": "Integration test class is not run by the build",
+      "severity": "high",
+      "source": "it-not-run",
+      "scope": "global",
+      "impact": "Classes named *IT are excluded from the default test run and no failsafe plugin runs them. Their result is not in the build result.",
+      "check": "Set build.integrationTests to auto in the config (stage 1 then runs them through surefire), or add the failsafe plugin."
+    },
+    {
+      "id": "R-LIB-API-REMOVED-USED",
+      "title": "Library class or member used by master code is removed or moved",
+      "severity": "high",
+      "source": "library-api",
+      "match": "removed-used",
+      "scope": "symbol",
+      "impact": "Master code called a library API that change_branch's library version no longer has. change_branch code was migrated to a replacement, whose behavior can differ.",
+      "check": "Validate the replacement against the library's release notes (release-notes agent), and run the probes and tests of the flows that reach the code (phase 5)."
+    },
+    {
+      "id": "R-LIB-API-CHANGED-USED",
+      "title": "Library class used by change_branch code has a changed public API",
+      "severity": "medium",
+      "source": "library-api",
+      "match": "changed-used",
+      "scope": "symbol",
+      "impact": "The library class changed between the versions. The members the code calls still exist, but behavior behind them can change.",
+      "check": "Release notes for the class, and the probes of the flows that reach the code (phase 5)."
+    },
+    {
+      "id": "R-ACTUATOR-EXPOSURE",
+      "title": "Actuator endpoint exposure changed",
+      "severity": "medium",
+      "source": "diff-any",
+      "fileGlob": "*.yml",
+      "pattern": "exposure|include:",
+      "scope": "global",
+      "impact": "Management endpoints that are exposed or hidden change. Operations tooling can break.",
+      "check": "Probes on the actuator paths on both sides (phase 5)."
+    },
+    {
+      "id": "R-API-REMOVED",
+      "title": "Public class or method removed",
+      "severity": "high",
+      "source": "api",
+      "match": "removed",
+      "scope": "symbol",
+      "impact": "A public member that other code may call is gone.",
+      "check": "Callers in the reach of the symbol are tested (phase 5)."
+    },
+    {
+      "id": "R-API-ADDED",
+      "title": "Public class or method added",
+      "severity": "info",
+      "source": "api",
+      "match": "added",
+      "scope": "none",
+      "impact": "A new public member. It does not change existing behavior.",
+      "check": "None needed beyond review."
+    },
+    {
+      "id": "R-DEP-MAJOR",
+      "title": "Direct dependency changed by a major version",
+      "severity": "high",
+      "source": "dependency",
+      "match": "major-direct",
+      "scope": "global",
+      "impact": "A major version change in a direct dependency can remove APIs and change defaults for every flow.",
+      "check": "Probes on every endpoint and the dump diff (phase 5)."
+    },
+    {
+      "id": "R-DEP-MAJOR-TRANSITIVE",
+      "title": "Transitive dependency changed by a major version (BOM-driven)",
+      "severity": "medium",
+      "source": "dependency",
+      "match": "major-transitive",
+      "scope": "global",
+      "impact": "The BOM or a parent upgrades a library the app does not declare itself. The change still reaches the app.",
+      "check": "Probes on every endpoint and the dump diff (phase 5)."
+    },
+    {
+      "id": "R-DEP-ADDED-DIRECT",
+      "title": "Direct dependency added",
+      "severity": "low",
+      "source": "dependency",
+      "match": "added-direct",
+      "scope": "none",
+      "impact": "A new direct dependency. It has no effect unless code uses it.",
+      "check": "Dependency analysis shows whether code uses it (phase 3)."
+    },
+    {
+      "id": "R-DEP-USED-UNDECLARED",
+      "title": "Code uses a library that is not declared (new in change_branch)",
+      "severity": "medium",
+      "source": "dependency-analyze",
+      "match": "undeclared-new",
+      "scope": "global",
+      "impact": "The code depends on a transitive library. A BOM or parent change can remove it without any change in the app's own pom.",
+      "check": "Declare the library or accept the risk; the probes cover the code that uses it (phase 5)."
+    },
+    {
+      "id": "R-DEP-UNUSED-DECLARED",
+      "title": "Declared dependency is not used (new in change_branch)",
+      "severity": "low",
+      "source": "dependency-analyze",
+      "match": "unused-new",
+      "scope": "none",
+      "impact": "A declared dependency has no use in compiled code. It can be removed, or it is used only at runtime through configuration.",
+      "check": "Review in phase 7."
+    },
+    {
+      "id": "R-DEP-REMOVED-DIRECT",
+      "title": "Direct dependency removed",
+      "severity": "high",
+      "source": "dependency",
+      "match": "removed-direct",
+      "scope": "global",
+      "impact": "A direct dependency is gone. Code that used it may fail at runtime, or may now use a different class.",
+      "check": "Probes on every endpoint, and a build with the dependency analysis (phase 3)."
+    }
+  ]
+}
