@@ -3,7 +3,7 @@ runs/
 repos/
 
 # Machine-specific configuration (paths to this computer's JDKs and settings)
-config/upgrade-lens.json
+.github/upgradelens/config/upgrade-lens.json
 
 # Python
 __pycache__/
