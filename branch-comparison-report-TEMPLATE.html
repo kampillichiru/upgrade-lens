@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branch Comparison Report: {{SERVICE_NAME}}</title>
+<!--
+  TEMPLATE. Matches the target report layout exactly.
+  1. Replace every {{PLACEHOLDER}}.
+  2. Rows marked REPEAT: copy the row once per item, then delete the comment.
+  3. Counts in section 1 must match the rows in sections 2 to 5.
+  4. Confidence classes: High = b-green, Medium = b-amber, Low = b-red.
+  5. Mode classes in section 6: Manual = b-red, Spot check = b-amber, Automated = b-green.
+  6. Remove the "Showing X of Y" notes once every row is included.
+-->
+<style>
+  :root { --ink:#1f2933; --muted:#616e7c; --line:#d9dee5; --soft:#f5f7fa; --red:#c62828; --red-soft:#fdecea; --green:#2e7d32; --green-soft:#e8f5e9; --amber:#b26a00; --amber-soft:#fff4e0; --blue:#1f5fbf; --blue-soft:#e8f0fe; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color:var(--ink); background:#fff; font-size:13.5px; line-height:1.5; }
+  main { max-width: 1040px; margin: 0 auto; padding: 30px 24px 56px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 14px; margin: 18px 0 6px; }
+  p { margin: 6px 0; }
+  .meta { color: var(--muted); font-size: 12.5px; margin: 6px 0 16px; }
+  table { width:100%; border-collapse: collapse; margin: 6px 0 4px; }
+  th, td { text-align:left; padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--soft); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td.num { white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .status-row td { border-bottom: none; }
+  .status { color:#fff; background: var(--red); font-weight: 700; padding: 4px 10px; border-radius: 4px; letter-spacing: .03em; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11.5px; font-weight:600; white-space:nowrap; }
+  .b-red { background: var(--red-soft); color: var(--red); }
+  .b-amber { background: var(--amber-soft); color: var(--amber); }
+  .b-green { background: var(--green-soft); color: var(--green); }
+  .b-blue { background: var(--blue-soft); color: var(--blue); }
+  .b-grey { background: var(--soft); color: var(--muted); }
+  .crit { color: var(--red); font-weight: 700; }
+  .high { color: var(--amber); font-weight: 700; }
+  .med { color: #7a5b00; font-weight: 700; }
+  .low { color: var(--blue); font-weight: 700; }
+  code { background: var(--soft); padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .note { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
+  .ex { font-family: ui-monospace, Consolas, monospace; font-size: 12px; white-space: pre-line; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 26px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Branch Comparison Report: {{SERVICE_NAME}}</h1>
+<div class="meta">
+  Master <code>{{MASTER_COMMIT}}</code> &nbsp;|&nbsp; Change <code>{{CHANGE_BRANCH}}</code> <code>{{CHANGE_COMMIT}}</code> &nbsp;|&nbsp; Java {{JAVA_BASE}} to {{JAVA_CHANGE}} &nbsp;|&nbsp; Spring Boot {{SB_BASE}} to {{SB_CHANGE}} &nbsp;|&nbsp; Run {{RUN_ID}}, {{REPORT_DATE}} &nbsp;|&nbsp; Readers: QA, developers
+</div>
+
+<h2>1. Summary</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:28%">Type</th><th>Master branch</th><th>Change branch</th><th>Difference</th></tr></thead>
+  <tbody>
+    <tr><td>Name</td><td>{{SERVICE_NAME}}</td><td>{{SERVICE_NAME}} ({{CHANGE_BRANCH}})</td><td>&nbsp;</td></tr>
+    <tr><td>Test coverage (line)</td><td class="num">{{COV_MASTER}}</td><td class="num">{{COV_CHANGE}}</td><td class="num">{{COV_DIFF}}</td></tr>
+    <tr><td>Mutation score (changed code)</td><td class="num">{{MUT_MASTER}}</td><td class="num">{{MUT_CHANGE}}</td><td class="num">{{MUT_DIFF}}</td></tr>
+    <tr><td>Changes</td><td colspan="2">{{FILES_CHANGED}} files</td><td>{{FILES_ADDED}} added, {{FILES_REMOVED}} removed, {{FILES_MODIFIED}} modified</td></tr>
+    <tr><td>Issues</td><td colspan="2">{{ISSUES_TOTAL}} issues</td><td>{{N_CRIT}} critical, {{N_HIGH}} high, {{N_MED}} medium, {{N_LOW}} low</td></tr>
+    <tr class="status-row"><td><strong>Status</strong></td><td colspan="3"><span class="status">{{STATUS}}</span> &nbsp; {{STATUS_REASON}}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>2. Issues</h2>
+<p>Each issue states why it is a risk, what master does, what the change branch does, the impact, and a simple example. Critical and high issues are shown in full. Medium and low issues are listed in section 2.3.</p>
+
+<h3>2.1 Critical ({{N_CRIT}})</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:19%">Why it is a potential issue</th><th style="width:17%">Master</th><th style="width:17%">Change branch</th><th style="width:19%">Impact</th><th>Simple example</th></tr></thead>
+  <tbody>
+    <!-- REPEAT for each critical issue -->
+    <tr>
+      <td><strong>{{ISSUE_ID}}</strong><br><span class="crit">Critical</span></td>
+      <td>{{WHY_RISK}}<br><span class="note">{{CLASS_METHOD}}</span></td>
+      <td>{{MASTER_BEHAVIOUR}}</td>
+      <td>{{CHANGE_BEHAVIOUR}}</td>
+      <td>{{IMPACT}}</td>
+      <td class="ex">{{EXAMPLE}}</td>
+    </tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+
+<h3>2.2 High ({{N_HIGH}})</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:19%">Why it is a potential issue</th><th style="width:17%">Master</th><th style="width:17%">Change branch</th><th style="width:19%">Impact</th><th>Simple example</th></tr></thead>
+  <tbody>
+    <!-- REPEAT for each high issue -->
+    <tr>
+      <td><strong>{{ISSUE_ID}}</strong><br><span class="high">High</span></td>
+      <td>{{WHY_RISK}}<br><span class="note">{{CLASS_METHOD}}</span></td>
+      <td>{{MASTER_BEHAVIOUR}}</td>
+      <td>{{CHANGE_BEHAVIOUR}}</td>
+      <td>{{IMPACT}}</td>
+      <td class="ex">{{EXAMPLE}}</td>
+    </tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+
+<h3>2.3 Medium and low ({{N_MED}} medium, {{N_LOW}} low)</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:12%">ID</th><th style="width:12%">Severity</th><th>Summary</th><th style="width:22%">Owner / status</th></tr></thead>
+  <tbody>
+    <!-- REPEAT for each medium or low issue -->
+    <tr><td>{{ISSUE_ID}}</td><td><span class="{{SEV_CLASS}}">{{SEVERITY}}</span></td><td>{{SUMMARY}}</td><td><span class="badge {{STATUS_CLASS}}">{{ISSUE_STATUS}}</span></td></tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+<p class="note">Showing {{SHOWN_MED_LOW}} of {{N_MED_LOW}}. The full list of {{N_MED}} medium and {{N_LOW}} low issues is in the complete report.</p>
+
+<h3>2.4 Issue ownership and status</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Severity</th><th>Count</th><th>Developer action</th><th>Release effect</th></tr></thead>
+  <tbody>
+    <tr><td><span class="crit">Critical</span></td><td class="num">{{N_CRIT}}</td><td>Fix and add tests that fail on the planted break</td><td><span class="badge b-red">Blocks release</span></td></tr>
+    <tr><td><span class="high">High</span></td><td class="num">{{N_HIGH}}</td><td>Add the missing test, then re-verify</td><td><span class="badge b-red">Blocks release</span></td></tr>
+    <tr><td><span class="med">Medium</span></td><td class="num">{{N_MED}}</td><td>Fix or document an accepted risk</td><td><span class="badge b-amber">Review</span></td></tr>
+    <tr><td><span class="low">Low</span></td><td class="num">{{N_LOW}}</td><td>Track</td><td><span class="badge b-grey">No block</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>3. Changes between the branches</h2>
+<p>One row per changed class and method. Coverage is shown for master (before) and the change branch (after).</p>
+<div class="scroll">
+<table>
+  <thead>
+    <tr>
+      <th>Class</th><th>Method</th><th>What exists in master</th><th>What changed in change branch</th>
+      <th>Coverage in master</th><th>How it was tested with automation</th><th>Coverage before to after</th><th>Confidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- REPEAT for each changed method -->
+    <tr>
+      <td><code>{{CLASS}}</code></td><td><code>{{METHOD}}</code></td>
+      <td>{{MASTER_BEHAVIOUR}}</td>
+      <td>{{CHANGE_BEHAVIOUR}}</td>
+      <td>{{COV_BEFORE_DETAIL}}</td>
+      <td>{{AUTOMATION_HOW}}</td>
+      <td>{{COV_BEFORE_TO_AFTER}}</td>
+      <td><span class="badge {{CONF_CLASS}}">{{CONFIDENCE}}</span></td>
+    </tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+<p class="note">Confidence: High = tests fail on planted breaks and the run matches master. Medium = tests exist but some breaks go undetected. Low = changed behaviour is not verified.</p>
+
+<h2>4. New test classes in the change branch (compared to master)</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Test class name</th><th>Path</th><th>Type</th><th>Covers</th><th>Coverage</th></tr></thead>
+  <tbody>
+    <!-- REPEAT for each new test class -->
+    <tr><td><code>{{TEST_CLASS}}</code></td><td><code>{{TEST_PATH}}</code></td><td>{{TEST_TYPE}}</td><td>{{TEST_COVERS}}</td><td class="num">{{TEST_COVERAGE}}</td></tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+<p class="note">Showing {{SHOWN_NEW}} of {{N_NEW}} added test classes.</p>
+
+<h2>5. Removed test classes in the change branch (compared to master)</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Test class name</th><th>Path</th><th>Previously covered</th><th>Replaced by</th><th>Risk</th></tr></thead>
+  <tbody>
+    <!-- REPEAT for each removed test class -->
+    <tr><td><code>{{REMOVED_CLASS}}</code></td><td><code>{{REMOVED_PATH}}</code></td><td>{{REMOVED_COVERED}}</td><td>{{REPLACED_BY}}</td><td><span class="badge {{RISK_CLASS}}">{{RISK}}</span></td></tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+<p class="note">Showing {{SHOWN_REMOVED}} of {{N_REMOVED}} removed test classes. A High-risk removal without a replacement blocks the release.</p>
+
+<h2>6. QA focus: flows the BA needs checked</h2>
+<p>Flows are ordered by risk. Manual checks are needed only for the flows marked Manual. The rest are covered by automated tests and the differential run.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:8%">Priority</th><th>Flow</th><th>Why it needs checking</th><th>Issues</th><th>Mode</th></tr></thead>
+  <tbody>
+    <!-- REPEAT for each flow -->
+    <tr><td class="num">{{PRIORITY}}</td><td>{{FLOW}}</td><td>{{FLOW_WHY}}</td><td>{{FLOW_ISSUES}}</td><td><span class="badge {{MODE_CLASS}}">{{MODE}}</span></td></tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+
+<h2>7. Release decision and sign-off</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Condition for GO</th><th>Status</th></tr></thead>
+  <tbody>
+    <!-- REPEAT for each GO condition -->
+    <tr><td>{{GO_CONDITION}}</td><td><span class="badge {{GO_CLASS}}">{{GO_STATUS}}</span></td></tr>
+    <!-- END REPEAT -->
+  </tbody>
+</table>
+</div>
+<p class="note">Known limitation: {{LIMITATIONS}}</p>
+<div class="scroll" style="margin-top:12px;">
+<table>
+  <thead><tr><th>Role</th><th>Name</th><th>Decision</th><th>Date</th></tr></thead>
+  <tbody>
+    <tr><td>Developer (technical)</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    <tr><td>BA (business rules)</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    <tr><td>QA lead</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="foot">Generated from pipeline run {{RUN_ID}}.</div>
+
+</main>
+</body>
+</html>

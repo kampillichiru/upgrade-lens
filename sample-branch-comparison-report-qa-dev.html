@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branch Comparison Report: orders-service (Sample)</title>
+<style>
+  :root { --ink:#1f2933; --muted:#616e7c; --line:#d9dee5; --soft:#f5f7fa; --red:#c62828; --red-soft:#fdecea; --green:#2e7d32; --green-soft:#e8f5e9; --amber:#b26a00; --amber-soft:#fff4e0; --blue:#1f5fbf; --blue-soft:#e8f0fe; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color:var(--ink); background:#fff; font-size:13.5px; line-height:1.5; }
+  main { max-width: 1040px; margin: 0 auto; padding: 30px 24px 56px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 14px; margin: 18px 0 6px; }
+  p { margin: 6px 0; }
+  .sample { color: var(--amber); font-weight: 600; font-size: 12px; }
+  .meta { color: var(--muted); font-size: 12.5px; margin: 6px 0 16px; }
+  table { width:100%; border-collapse: collapse; margin: 6px 0 4px; }
+  th, td { text-align:left; padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--soft); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td.num { white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .status-row td { border-bottom: none; }
+  .status { color:#fff; background: var(--red); font-weight: 700; padding: 4px 10px; border-radius: 4px; letter-spacing: .03em; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11.5px; font-weight:600; white-space:nowrap; }
+  .b-red { background: var(--red-soft); color: var(--red); }
+  .b-amber { background: var(--amber-soft); color: var(--amber); }
+  .b-green { background: var(--green-soft); color: var(--green); }
+  .b-blue { background: var(--blue-soft); color: var(--blue); }
+  .b-grey { background: var(--soft); color: var(--muted); }
+  .crit { color: var(--red); font-weight: 700; }
+  .high { color: var(--amber); font-weight: 700; }
+  .med { color: #7a5b00; font-weight: 700; }
+  .low { color: var(--blue); font-weight: 700; }
+  code { background: var(--soft); padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .note { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
+  .ex { font-family: ui-monospace, Consolas, monospace; font-size: 12px; white-space: pre-line; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 26px; }
+</style>
+</head>
+<body>
+<main>
+
+<div class="sample">Sample data for layout review only</div>
+<h1>Branch Comparison Report: orders-service</h1>
+<div class="meta">
+  Master <code>a41c9e2</code> &nbsp;|&nbsp; Change <code>feature/spring-boot-3-upgrade</code> <code>7f0b3d1</code> &nbsp;|&nbsp; Java 17 to 21 &nbsp;|&nbsp; Spring Boot 2.7.18 to 3.3.5 &nbsp;|&nbsp; Run #2841, 2026-11-28 &nbsp;|&nbsp; Readers: QA, developers
+</div>
+
+<h2>1. Summary</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:28%">Type</th><th>Master branch</th><th>Change branch</th><th>Difference</th></tr></thead>
+  <tbody>
+    <tr><td>Name</td><td>orders-service</td><td>orders-service (upgrade)</td><td>&nbsp;</td></tr>
+    <tr><td>Test coverage (line)</td><td class="num">81%</td><td class="num">83%</td><td class="num">+2 pts</td></tr>
+    <tr><td>Mutation score (changed code)</td><td class="num">n/a</td><td class="num">64%</td><td class="num">Target 80%, not met</td></tr>
+    <tr><td>Changes</td><td colspan="2">62 files</td><td>10 added, 15 removed, 37 modified</td></tr>
+    <tr><td>Issues</td><td colspan="2">58 issues</td><td>3 critical, 15 high, 10 medium, 30 low</td></tr>
+    <tr class="status-row"><td><strong>Status</strong></td><td colspan="3"><span class="status">NO GO</span> &nbsp; Two critical issues in checkout and payment flows must be fixed and re-verified before release.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>2. Issues</h2>
+<p>Each issue states why it is a risk, what master does, what the change branch does, the impact, and a simple example. Critical and high issues are shown in full. Medium and low issues are listed in section 2.4.</p>
+
+<h3>2.1 Critical (3)</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:19%">Why it is a potential issue</th><th style="width:17%">Master</th><th style="width:17%">Change branch</th><th style="width:19%">Impact</th><th>Simple example</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>ISSUE-001</strong><br><span class="crit">Critical</span></td>
+      <td>Order total is calculated in a different order, so customers with discounts can be charged a different amount.<br><span class="note">Class <code>OrderTotalCalculator#calculate</code></span></td>
+      <td>Discount is applied to the net amount, then tax is added.</td>
+      <td>Tax is added first, then the discount is applied.</td>
+      <td>Totals differ from master on discounted orders. Invoices and finance reconciliation fail.</td>
+      <td class="ex">Item 49.99, 10% off, 20% tax
+master : 53.99
+change : 54.00</td>
+    </tr>
+    <tr>
+      <td><strong>ISSUE-002</strong><br><span class="crit">Critical</span></td>
+      <td>A new error is logged and swallowed, so the test still passes but the order is not updated.<br><span class="note">Class <code>PaymentCallbackHandler#onCallback</code></span></td>
+      <td>Callback sets the order to PAID.</td>
+      <td>A JSON date parse fails under the new Jackson version. The error is logged and the order stays PENDING.</td>
+      <td>Paid orders can stay pending. Customers may pay twice.</td>
+      <td class="ex">Callback received
+ERROR: date parse failed
+status: PENDING (expected PAID)</td>
+    </tr>
+    <tr>
+      <td><strong>ISSUE-003</strong><br><span class="crit">Critical</span></td>
+      <td>An admin URL form is matched differently, so access control can be bypassed.<br><span class="note">Class <code>SecurityConfig</code></span></td>
+      <td>Requests to <code>/orders/admin/**</code> need the ADMIN role.</td>
+      <td>Matcher changed. The URL with a trailing slash is not covered by the rule.</td>
+      <td>An admin endpoint is reachable without the ADMIN role.</td>
+      <td class="ex">GET /orders/admin/ (no role)
+master : 403
+change : 200</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>2.2 High (15, sample shows 2)</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:19%">Why it is a potential issue</th><th style="width:17%">Master</th><th style="width:17%">Change branch</th><th style="width:19%">Impact</th><th>Simple example</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>ISSUE-004</strong><br><span class="high">High</span></td>
+      <td>Boundary value changed, and the boundary test was missing.<br><span class="note">Class <code>ShippingPolicy#fee</code></span></td>
+      <td>Free shipping at 50.00 or more.</td>
+      <td>Free shipping only above 50.00.</td>
+      <td>Orders of exactly 50.00 pay shipping.</td>
+      <td class="ex">Total 50.00
+master : fee 0.00
+change : fee 4.99</td>
+    </tr>
+    <tr>
+      <td><strong>ISSUE-005</strong><br><span class="high">High</span></td>
+      <td>A key was renamed during the upgrade and the default value now applies.<br><span class="note">File <code>application-prod.yml</code></span></td>
+      <td>Reservation timeout is 15 minutes.</td>
+      <td>Timeout is 5 minutes (default applied).</td>
+      <td>Stock is released early, so orders can oversell.</td>
+      <td class="ex">inventory.reserve-timeout
+master : 15m
+change : 5m (default)</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>2.3 Medium and low (sample)</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:12%">ID</th><th style="width:12%">Severity</th><th>Summary</th><th style="width:22%">Owner / status</th></tr></thead>
+  <tbody>
+    <tr><td>ISSUE-006</td><td><span class="med">Medium</span></td><td>Order list sort is not stable when dates match. Master is stable. Can cause duplicate or skipped rows on paging.</td><td><span class="badge b-grey">Accepted for now</span></td></tr>
+    <tr><td>ISSUE-007</td><td><span class="low">Low</span></td><td>Deprecated <code>javax</code> logging import. Mechanical namespace change, behaviour unchanged.</td><td><span class="badge b-green">Done</span></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Showing 7 of 58. The full list of 10 medium and 30 low issues is in the complete report.</p>
+
+<h3>2.4 Issue ownership and status</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Severity</th><th>Count</th><th>Developer action</th><th>Release effect</th></tr></thead>
+  <tbody>
+    <tr><td><span class="crit">Critical</span></td><td class="num">3</td><td>Fix and add tests that fail on the planted break</td><td><span class="badge b-red">Blocks release</span></td></tr>
+    <tr><td><span class="high">High</span></td><td class="num">15</td><td>Add the missing test, then re-verify</td><td><span class="badge b-red">Blocks release</span></td></tr>
+    <tr><td><span class="med">Medium</span></td><td class="num">10</td><td>Fix or document an accepted risk</td><td><span class="badge b-amber">Review</span></td></tr>
+    <tr><td><span class="low">Low</span></td><td class="num">30</td><td>Track</td><td><span class="badge b-grey">No block</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>3. Changes between the branches</h2>
+<p>One row per changed class and method. Coverage is shown for master (before) and the change branch (after).</p>
+<div class="scroll">
+<table>
+  <thead>
+    <tr>
+      <th>Class</th><th>Method</th><th>What exists in master</th><th>What changed in change branch</th>
+      <th>Coverage in master</th><th>How it was tested with automation</th><th>Coverage before to after</th><th>Confidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>OrderTotalCalculator</code></td><td><code>calculate</code></td>
+      <td>Discount before tax</td><td>Tax before discount</td>
+      <td>Lines 92%, mutants caught 58%</td>
+      <td>Characterization tests added for discount and boundary values; mutation testing</td>
+      <td>Mutants caught 58% to 91%</td>
+      <td><span class="badge b-red">Low until fixed</span></td>
+    </tr>
+    <tr>
+      <td><code>PaymentCallbackHandler</code></td><td><code>onCallback</code></td>
+      <td>Sets status PAID</td><td>Logs error, status stays PENDING</td>
+      <td>Lines 85%, mutants caught 40%</td>
+      <td>Assertion on final order status added (was HTTP 200 only)</td>
+      <td>Mutants caught 40% to 72%</td>
+      <td><span class="badge b-amber">Medium</span></td>
+    </tr>
+    <tr>
+      <td><code>ShippingPolicy</code></td><td><code>fee</code></td>
+      <td>Free at 50.00 or more</td><td>Free only above 50.00</td>
+      <td>Lines 100%, mutants caught 50%</td>
+      <td>Boundary tests at 49.99, 50.00, 50.01</td>
+      <td>Mutants caught 50% to 100%</td>
+      <td><span class="badge b-green">High</span></td>
+    </tr>
+    <tr>
+      <td><code>SecurityConfig</code></td><td><code>filterChain</code></td>
+      <td>ADMIN role on admin paths</td><td>Matcher changed</td>
+      <td>Lines 70%, no URL-form test</td>
+      <td>Integration tests per URL form (401 and 403)</td>
+      <td>Coverage 20% to 85%</td>
+      <td><span class="badge b-red">Low until fixed</span></td>
+    </tr>
+    <tr>
+      <td><code>OrderQueryService</code></td><td><code>list</code></td>
+      <td>Stable sort by created date</td><td>Unstable when dates match</td>
+      <td>Lines 88%, mutants caught 61%</td>
+      <td>No new test (accepted for now)</td>
+      <td>61% to 61%</td>
+      <td><span class="badge b-amber">Medium</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Confidence: High = tests fail on planted breaks and the run matches master. Medium = tests exist but some breaks go undetected. Low = changed behaviour is not verified.</p>
+
+<h2>4. New test classes in the change branch (compared to master)</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Test class name</th><th>Path</th><th>Type</th><th>Covers</th><th>Coverage</th></tr></thead>
+  <tbody>
+    <tr><td><code>OrderTotalCalculatorDiscountTest</code></td><td><code>orders-core/src/test/java/…/order/</code></td><td>Unit</td><td><code>OrderTotalCalculator#calculate</code></td><td class="num">96%</td></tr>
+    <tr><td><code>PaymentCallbackStatusIT</code></td><td><code>orders-core/src/test/java/…/payment/</code></td><td>Integration</td><td>POST /payments/callback</td><td class="num">88%</td></tr>
+    <tr><td><code>AdminSecurityIT</code></td><td><code>orders-api/src/test/java/…/security/</code></td><td>Integration</td><td>Admin endpoints, all URL forms</td><td class="num">n/a (flow)</td></tr>
+    <tr><td><code>ShippingPolicyBoundaryTest</code></td><td><code>orders-core/src/test/java/…/shipping/</code></td><td>Unit</td><td><code>ShippingPolicy#fee</code></td><td class="num">100%</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Sample shows 4 of 10 added test classes.</p>
+
+<h2>5. Removed test classes in the change branch (compared to master)</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Test class name</th><th>Path</th><th>Previously covered</th><th>Replaced by</th><th>Risk</th></tr></thead>
+  <tbody>
+    <tr><td><code>LegacyCurrencyRoundingTest</code></td><td><code>orders-core/src/test/java/…/</code></td><td>Old rounding helper</td><td><code>OrderTotalCalculatorDiscountTest</code></td><td><span class="badge b-green">None</span></td></tr>
+    <tr><td><code>OrderApiSmokeTest</code></td><td><code>orders-api/src/test/java/…/</code></td><td>Smoke check of /orders</td><td><code>OrderApiIT</code> (duplicate)</td><td><span class="badge b-amber">Low, confirm</span></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Sample shows 2 of 15 removed test classes. A High-risk removal without a replacement blocks the release.</p>
+
+<h2>6. QA focus: flows the BA needs checked</h2>
+<p>Flows are ordered by risk. Manual checks are needed only for the first three. The rest are covered by automated tests and the differential run.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th style="width:8%">Priority</th><th>Flow</th><th>Why it needs checking</th><th>Issues</th><th>Mode</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td>Checkout with discount and tax</td><td>Money calculation. Finance confirms totals match master on real discounted orders.</td><td>ISSUE-001</td><td><span class="badge b-red">Manual</span></td></tr>
+    <tr><td class="num">2</td><td>Payment callback marks order as paid</td><td>Real payment provider behaviour is not in the test run.</td><td>ISSUE-002</td><td><span class="badge b-red">Manual</span></td></tr>
+    <tr><td class="num">3</td><td>Admin screens, all URL forms, by role</td><td>Access control is checked in the browser.</td><td>ISSUE-003</td><td><span class="badge b-red">Manual</span></td></tr>
+    <tr><td class="num">4</td><td>Shipping fee at the 50.00 boundary</td><td>Automated boundary tests pass. One spot check confirms the business rule.</td><td>ISSUE-004</td><td><span class="badge b-amber">Spot check</span></td></tr>
+    <tr><td class="num">5</td><td>Order listing and paging</td><td>Covered by the differential run and BDD scenarios.</td><td>ISSUE-006</td><td><span class="badge b-green">Automated</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>7. Release decision and sign-off</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Condition for GO</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>All critical issues fixed and re-verified</td><td><span class="badge b-red">Not met</span></td></tr>
+    <tr><td>Mutation score on changed code at or above 80%</td><td><span class="badge b-red">Not met (64%)</span></td></tr>
+    <tr><td>Manual checks in section 6, priorities 1 to 3, passed</td><td><span class="badge b-red">Not started</span></td></tr>
+    <tr><td>No unexplained difference from master in critical flows</td><td><span class="badge b-red">Not met</span></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Known limitation: the automated run used H2. Production database behaviour is not verified and is covered by the manual checks above.</p>
+<div class="scroll" style="margin-top:12px;">
+<table>
+  <thead><tr><th>Role</th><th>Name</th><th>Decision</th><th>Date</th></tr></thead>
+  <tbody>
+    <tr><td>Developer (technical)</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    <tr><td>BA (business rules)</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    <tr><td>QA lead</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="foot">Sample data for layout review. The pipeline replaces this content with real results.</div>
+
+</main>
+</body>
+</html>
