@@ -37,7 +37,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.analysis import (dependency_assessment, dependency_suggestions, parse_dependency_analyze)  # noqa: E402
-from lib.core import (TOOL_VERSION, as_list, compare_dependency_trees, config_value, get, java_files, jdk_env, jdk_tool,  # noqa: E402
+from lib.core import (MAVEN_NATIVE_GIT_ARGS, TOOL_VERSION, as_list, compare_dependency_trees, config_value, get, java_files, jdk_env, jdk_tool,  # noqa: E402
                       log, parse_dependency_tree, parse_dependency_tree_verbose, ps_sorted, read_json_safe, read_lines,
                       read_text, resolve_config_path, run_main, run_native, runs_root, s, set_run_state,
                       set_stage_log, set_stage_step, source_index, to_int, unique_sorted, write_json, write_text)
@@ -121,7 +121,7 @@ def main(argv) -> int:
     jdeps = jdk_tool(sides[1]["jdk"], "jdeps")
 
     def side_maven(sd: dict, goals, log_name: str):
-        args = ["-B", "-ntp"] + (["-s", settings] if settings else []) + ["-f", os.path.join(sd["worktree"], "pom.xml")] + list(goals)
+        args = ["-B", "-ntp"] + list(MAVEN_NATIVE_GIT_ARGS) + (["-s", settings] if settings else []) + ["-f", os.path.join(sd["worktree"], "pom.xml")] + list(goals)
         r = run_native(mvn, args, env=jdk_env(sd["jdk"]))
         path = os.path.join(logs_dir, log_name)
         write_text(path, "\n".join(r.output) + "\n")

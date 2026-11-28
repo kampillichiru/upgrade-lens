@@ -24,6 +24,10 @@ import xml.etree.ElementTree as ET
 
 IS_WINDOWS = os.name == "nt"
 TOOL_VERSION = "2.0.0"
+# Every Maven run on a worktree passes this. Worktrees are backed by a bare repository, which the JGit reader of
+# git-commit-id-plugin cannot resolve (missing commit on one branch, no HEAD on the other); native Git can.
+# A project without that plugin ignores the property.
+MAVEN_NATIVE_GIT_ARGS = ("-Dmaven.gitcommitid.nativegit=true",)
 SCRIPTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = os.path.dirname(SCRIPTS_DIR)          # the tool itself: .github\upgradelens
 # The workspace that holds .github. Run output (runsFolder) is relative to it, so runs never land inside .github.

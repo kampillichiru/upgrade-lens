@@ -33,7 +33,7 @@ import xml.etree.ElementTree as ET
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib.core import (TOOL_VERSION, VERDICT_STATES, as_list, config_value, file_sha256, get, items, jdk_env,  # noqa: E402
+from lib.core import (MAVEN_NATIVE_GIT_ARGS, TOOL_VERSION, VERDICT_STATES, as_list, config_value, file_sha256, get, items, jdk_env,  # noqa: E402
                       log, native_path, now_iso, read_json_safe, resolve_config_path, run_main, run_native, runs_root, s,
                       set_stage_log, to_int, which, write_json, write_text)
 from lib.mutation import method_strength, plan_mutants  # noqa: E402
@@ -118,7 +118,7 @@ def main(argv) -> int:
     settings = s(get(cfg, "maven", "settingsFile"))
     head_cmd = s(get(builds, "sides", "head", "command"))
     test_filter = re.search(r"(-Dtest=\S+)", head_cmd)
-    args = ["-B", "-ntp"] + (["-s", settings] if settings and os.path.isfile(settings) else []) + \
+    args = ["-B", "-ntp"] + list(MAVEN_NATIVE_GIT_ARGS) + (["-s", settings] if settings and os.path.isfile(settings) else []) + \
            ["-f", os.path.join(head_wt, "pom.xml")] + \
            ([test_filter.group(1), "-Dsurefire.failIfNoSpecifiedTests=false"] if test_filter else []) + \
            ["-Djacoco.skip=true", "-Dmaven.test.failure.ignore=true", "test"]
@@ -187,7 +187,7 @@ def main(argv) -> int:
         log(f"{rel} {m.get('name')}: {row['strength']}")
 
     # Leave the head build as it was: compile the restored sources once more.
-    run_native(mvn, ["-B", "-ntp", "-q"] + (["-s", settings] if settings and os.path.isfile(settings) else [])
+    run_native(mvn, ["-B", "-ntp", "-q"] + list(MAVEN_NATIVE_GIT_ARGS) + (["-s", settings] if settings and os.path.isfile(settings) else [])
                + ["-f", os.path.join(head_wt, "pom.xml"), "-Djacoco.skip=true", "test-compile"], env=jdk_env(jdk), timeout=timeout)
     strengths = [x["strength"] for x in doc["methods"]]
     doc["summary"] = {"methods": len(doc["methods"]), "mutants": done, "strong": strengths.count("strong"),

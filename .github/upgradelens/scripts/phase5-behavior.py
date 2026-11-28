@@ -49,7 +49,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.agents import agent_proposal  # noqa: E402
 from lib.analysis import app_properties, case_checks, case_results  # noqa: E402
-from lib.core import (IS_WINDOWS, ROOT_DIR, TOOL_VERSION, as_list, config_value, file_sha256, get,  # noqa: E402
+from lib.core import (IS_WINDOWS, MAVEN_NATIVE_GIT_ARGS, ROOT_DIR, TOOL_VERSION, as_list, config_value, file_sha256, get,  # noqa: E402
                       items, jdk_env, jdk_tool, log, native_path, ps_sorted, read_json_safe, resolve_config_path,
                       resolve_project_path, run_main, run_native, runs_root, s, set_run_state, set_stage_log,
                       set_stage_step, to_int, unique_sorted, write_json, write_text)
@@ -396,7 +396,7 @@ def main(argv) -> int:
         started = time.time()
         log(f"tests: {label}: running {len(class_names)} class(es) on {sd['side']}")
         test_log = os.path.join(logs_dir, f"tests-{sd['side']}-{datetime.datetime.now():%H%M%S%f}.log")
-        args = ["-B", "-ntp"] + (["-s", settings] if settings else []) + [
+        args = ["-B", "-ntp"] + list(MAVEN_NATIVE_GIT_ARGS) + (["-s", settings] if settings else []) + [
             "-f", os.path.join(wt, "pom.xml"), "test", f"-Dtest={','.join(class_names)}", "-Dsurefire.failIfNoSpecifiedTests=false"]
         r = run_native(mvn, args, env=jdk_env(sd["jdk"]))
         write_text(test_log, "\n".join(r.output) + "\n")

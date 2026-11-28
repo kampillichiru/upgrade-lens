@@ -54,7 +54,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.analysis import compare_test_results, parse_surefire_reports  # noqa: E402
-from lib.core import (IS_WINDOWS, TOOL_VERSION, append_text, as_list, config_value, get, jdk_env, jdk_tool, log,  # noqa: E402
+from lib.core import (IS_WINDOWS, MAVEN_NATIVE_GIT_ARGS, TOOL_VERSION, append_text, as_list, config_value, get, jdk_env, jdk_tool, log,  # noqa: E402
                       now_iso, ps_sorted, read_json_safe, read_lines, read_text, resolve_config_path,
                       run_main, runs_root, s, set_run_state, set_stage_log, set_stage_step, to_int, which, write_json,
                       write_text)
@@ -188,7 +188,7 @@ def main(argv) -> int:
     # ---------- step 3: build both sides in the background ----------
 
     def start_side_build(sd: dict):
-        mvn_args = ["-B", "-ntp"]
+        mvn_args = ["-B", "-ntp"] + list(MAVEN_NATIVE_GIT_ARGS)
         if settings:
             mvn_args += ["-s", settings]
         mvn_args += ["-f", os.path.join(sd["worktree"], "pom.xml")]

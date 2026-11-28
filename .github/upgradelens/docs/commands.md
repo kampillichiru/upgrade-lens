@@ -80,14 +80,15 @@ Both builds run **in parallel**, each with **its own JDK** (`java.base` and `jav
 an upgrade often changes the Java version.
 
 ```shell
-mvn -B -ntp -s <settings> -f R\worktrees\main\pom.xml          -Dmaven.test.failure.ignore=true clean verify
-mvn -B -ntp -s <settings> -f R\worktrees\change_branch\pom.xml -Dmaven.test.failure.ignore=true clean verify
+mvn -B -ntp -Dmaven.gitcommitid.nativegit=true -s <settings> -f R\worktrees\main\pom.xml          -Dmaven.test.failure.ignore=true clean verify
+mvn -B -ntp -Dmaven.gitcommitid.nativegit=true -s <settings> -f R\worktrees\change_branch\pom.xml -Dmaven.test.failure.ignore=true clean verify
 ```
 
 | Part | Meaning |
 |---|---|
 | `-B` | batch mode: no prompts, no colors, clean log |
 | `-ntp` | no transfer progress: the log is not filled with download lines |
+| `-Dmaven.gitcommitid.nativegit=true` | git-commit-id-plugin reads Git with the git executable; its built-in JGit reader cannot resolve worktrees of a bare repository. Ignored when the project does not use the plugin |
 | `-s <settings>` | your Maven settings file (mirrors, credentials), only if configured |
 | `-f <pom>` | which branch's project to build |
 | `-Dmaven.test.failure.ignore=true` | a failing test does not stop the build. Test failures are a result to compare, not an error |
